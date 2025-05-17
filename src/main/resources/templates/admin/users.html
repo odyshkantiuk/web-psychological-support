@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('Manage Users', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3"><i class="bi bi-people me-2"></i>User Management</h2>
+            <p class="lead">View and manage all system users.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a th:href="@{/admin/users/add}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Add New User
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form class="row g-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="searchUser" placeholder="Search by name, email or username...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterRole">
+                                <option value="">All Roles</option>
+                                <option value="CLIENT">Clients</option>
+                                <option value="PSYCHOLOGIST">Psychologists</option>
+                                <option value="ADMIN">Admins</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="sortBy">
+                                <option value="created_desc">Newest First</option>
+                                <option value="created_asc">Oldest First</option>
+                                <option value="name_asc">Name (A-Z)</option>
+                                <option value="name_desc">Name (Z-A)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" id="applyFilters" class="btn btn-primary w-100">Apply</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div th:if="${users.empty}" class="text-center py-5">
+                        <i class="bi bi-people fs-1 text-muted"></i>
+                        <h4 class="mt-3">No users found</h4>
+                        <p class="text-muted">Try a different search or filter, or add a new user.</p>
+                        <a th:href="@{/admin/users/add}" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-lg me-2"></i>Add New User
+                        </a>
+                    </div>
+
+                    <div th:unless="${users.empty}" class="table-responsive">
+                        <table class="table table-hover" id="usersTable">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="user : ${users}" th:data-role="${user.role}">
+                                <td th:text="${user.id}">1</td>
+                                <td th:text="${user.fullName}">John Doe</td>
+                                <td th:text="${user.username}">johndoe</td>
+                                <td th:text="${user.email}">john.doe@example.com</td>
+                                <td>
+                                    <span th:if="${user.role.name() == 'ADMIN'}" class="badge bg-danger" th:text="${user.role}">ADMIN</span>
+                                    <span th:if="${user.role.name() == 'PSYCHOLOGIST'}" class="badge bg-success" th:text="${user.role}">PSYCHOLOGIST</span>
+                                    <span th:if="${user.role.name() == 'CLIENT'}" class="badge bg-primary" th:text="${user.role}">CLIENT</span>
+                                </td>
+                                <td th:text="${#temporals.format(user.createdAt, 'MMM dd, yyyy')}">Jan 1, 2023</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a th:href="@{/admin/users/view/{id}(id=${user.id})}" class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a th:href="@{/admin/users/edit/{id}(id=${user.id})}" class="btn btn-outline-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal" th:data-user-id="${user.id}" th:data-user-name="${user.fullName}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <nav th:if="${totalPages > 1}" aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled' : ''">
+                                <a class="page-link" th:href="@{/admin/users(page=${currentPage - 1}, size=${pageSize})}" 
+                                   th:unless="${currentPage == 0}">Previous</a>
+                                <span class="page-link" th:if="${currentPage == 0}">Previous</span>
+                            </li>
+
+                            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                                class="page-item" 
+                                th:classappend="${i == currentPage} ? 'active' : ''">
+                                <a class="page-link" th:href="@{/admin/users(page=${i}, size=${pageSize})}" 
+                                   th:text="${i + 1}">1</a>
+                            </li>
+
+                            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled' : ''">
+                                <a class="page-link" th:href="@{/admin/users(page=${currentPage + 1}, size=${pageSize})}" 
+                                   th:unless="${currentPage == totalPages - 1}">Next</a>
+                                <span class="page-link" th:if="${currentPage == totalPages - 1}">Next</span>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteUserModalLabel">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the user <span id="deleteUserName" class="fw-bold"></span>?</p>
+                    <p class="text-danger">This action cannot be undone and will remove all user data, including appointments, journals, and messages.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteUserForm" method="post">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit" class="btn btn-danger">Delete User</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let allUsers = [];
+            const pageSize = 10;
+            let currentPage = 0;
+            let currentSort = 'created_desc';
+            let currentRole = '';
+            let currentSearch = '';
+
+            function initializeTable() {
+                const userRows = document.querySelectorAll('#usersTable tbody tr');
+                allUsers = Array.from(userRows).map(row => ({
+                    element: row,
+                    name: row.cells[1].textContent,
+                    username: row.cells[2].textContent,
+                    email: row.cells[3].textContent,
+                    role: row.getAttribute('data-role'),
+                    created: new Date(row.cells[5].textContent)
+                }));
+                updateTable();
+            }
+
+            function updateTable() {
+                let filteredUsers = allUsers.filter(user => {
+                    let matchesRole = !currentRole || user.role === currentRole;
+                    let matchesSearch = !currentSearch || 
+                        user.name.toLowerCase().includes(currentSearch) ||
+                        user.username.toLowerCase().includes(currentSearch) ||
+                        user.email.toLowerCase().includes(currentSearch);
+                    return matchesRole && matchesSearch;
+                });
+
+                filteredUsers.sort((a, b) => {
+                    switch(currentSort) {
+                        case 'created_desc':
+                            return b.created - a.created;
+                        case 'created_asc':
+                            return a.created - b.created;
+                        case 'name_asc':
+                            return a.name.localeCompare(b.name);
+                        case 'name_desc':
+                            return b.name.localeCompare(a.name);
+                        default:
+                            return 0;
+                    }
+                });
+
+                const totalPages = Math.ceil(filteredUsers.length / pageSize);
+                const start = currentPage * pageSize;
+                const end = start + pageSize;
+                const pageUsers = filteredUsers.slice(start, end);
+
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = '';
+                pageUsers.forEach(user => tbody.appendChild(user.element));
+
+                updatePagination(totalPages);
+            }
+
+            function updatePagination(totalPages) {
+                const pagination = document.querySelector('.pagination');
+                if (totalPages <= 1) {
+                    pagination.style.display = 'none';
+                    return;
+                }
+
+                pagination.style.display = 'flex';
+                const ul = pagination.querySelector('ul');
+                ul.innerHTML = '';
+
+                const prevLi = document.createElement('li');
+                prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
+                prevLi.innerHTML = `
+                    ${currentPage === 0 
+                        ? '<span class="page-link">Previous</span>'
+                        : `<a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>`
+                    }
+                `;
+                ul.appendChild(prevLi);
+
+                for (let i = 0; i < totalPages; i++) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i + 1}</a>`;
+                    ul.appendChild(li);
+                }
+
+                const nextLi = document.createElement('li');
+                nextLi.className = `page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}`;
+                nextLi.innerHTML = `
+                    ${currentPage === totalPages - 1
+                        ? '<span class="page-link">Next</span>'
+                        : `<a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>`
+                    }
+                `;
+                ul.appendChild(nextLi);
+
+                ul.querySelectorAll('a[data-page]').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        currentPage = parseInt(e.target.dataset.page);
+                        updateTable();
+                    });
+                });
+            }
+
+            const searchUserInput = document.getElementById('searchUser');
+            const filterRoleSelect = document.getElementById('filterRole');
+            const applyFiltersBtn = document.getElementById('applyFilters');
+
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', function() {
+                    currentSearch = searchUserInput.value.toLowerCase();
+                    currentRole = filterRoleSelect.value;
+                    currentPage = 0;
+                    updateTable();
+                });
+            }
+
+            const sortBySelect = document.getElementById('sortBy');
+            if (sortBySelect) {
+                sortBySelect.value = '[[${currentSort}]]';
+                
+                sortBySelect.addEventListener('change', function() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('sort', this.value);
+                    urlParams.set('page', '0');
+                    window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+                });
+            }
+
+            initializeTable();
+
+            const deleteUserModal = document.getElementById('deleteUserModal');
+            if (deleteUserModal) {
+                deleteUserModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const userId = button.getAttribute('data-user-id');
+                    const userName = button.getAttribute('data-user-name');
+
+                    document.getElementById('deleteUserName').textContent = userName;
+                    document.getElementById('deleteUserForm').action = `/admin/users/${userId}`;
+                });
+
+                const deleteUserForm = document.getElementById('deleteUserForm');
+                if (deleteUserForm) {
+                    deleteUserForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const form = this;
+                        
+                        fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams(new FormData(form))
+                        }).then(response => {
+                            if (response.ok) {
+                                const modal = bootstrap.Modal.getInstance(deleteUserModal);
+                                modal.hide();
+                                window.location.reload();
+                            } else {
+                                alert('Error deleting user. Please try again.');
+                            }
+                        }).catch(error => {
+                            console.error('Error:', error);
+                            alert('Error deleting user. Please try again.');
+                        });
+                    });
+                }
+            }
+        });
+    </script>
+</section>
+</body>
+</html>

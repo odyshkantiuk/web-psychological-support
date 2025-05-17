@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('Appointment Details', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3"><i class="bi bi-calendar-check me-2"></i>Appointment Details</h2>
+            <p class="lead">View and manage your appointment details.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a th:href="@{/client/appointments}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Appointments
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="card-title mb-4">Appointment Information</h5>
+                            <dl class="row">
+                                <dt class="col-sm-4">Psychologist</dt>
+                                <dd class="col-sm-8" th:text="${appointment.psychologistName}">Dr. Smith</dd>
+
+                                <dt class="col-sm-4">Date</dt>
+                                <dd class="col-sm-8" th:text="${#temporals.format(appointment.startTime, 'MMMM dd, yyyy')}">May 10, 2025</dd>
+
+                                <dt class="col-sm-4">Time</dt>
+                                <dd class="col-sm-8" th:text="${#temporals.format(appointment.startTime, 'hh:mm a') + ' - ' + #temporals.format(appointment.endTime, 'hh:mm a')}">10:00 AM - 11:00 AM</dd>
+
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8">
+                                    <span th:class="${appointment.status.name() == 'SCHEDULED' ? 'badge bg-primary' :
+                                                     appointment.status.name() == 'COMPLETED' ? 'badge bg-success' :
+                                                     appointment.status.name() == 'CANCELLED' ? 'badge bg-danger' : 'badge bg-warning'}"
+                                          th:text="${appointment.status}">Scheduled</span>
+                                </dd>
+
+                                <dt class="col-sm-4">Notes</dt>
+                                <dd class="col-sm-8" th:text="${appointment.notes ?: 'No notes'}">No notes</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="card-title mb-4">Actions</h5>
+                            <div class="d-grid gap-2">
+                                <a th:if="${appointment.status.name() == 'SCHEDULED'}"
+                                   th:href="@{'/client/messages?psychologistId=' + ${appointment.psychologistId}}"
+                                   class="btn btn-primary">
+                                    <i class="bi bi-chat-dots me-2"></i>Message Psychologist
+                                </a>
+                                <button th:if="${appointment.status.name() == 'SCHEDULED'}"
+                                        class="btn btn-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#cancelAppointmentModal"
+                                        th:data-appointment-id="${appointment.id}">
+                                    <i class="bi bi-x-circle me-2"></i>Cancel Appointment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="cancelAppointmentModal" tabindex="-1" aria-labelledby="cancelAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelAppointmentModalLabel">Confirm Cancellation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel this appointment? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep It</button>
+                    <form id="cancelAppointmentForm" th:action="@{/api/appointments}" method="post">
+                        <input type="hidden" name="_method" value="PATCH">
+                        <input type="hidden" id="cancelAppointmentId" name="id">
+                        <input type="hidden" name="status" value="CANCELLED">
+                        <button type="submit" class="btn btn-danger">Yes, Cancel Appointment</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const cancelAppointmentModal = document.getElementById('cancelAppointmentModal');
+        if (cancelAppointmentModal) {
+            cancelAppointmentModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const appointmentId = button.getAttribute('data-appointment-id');
+                document.getElementById('cancelAppointmentId').value = appointmentId;
+            });
+        }
+    });
+</script>
+</body>
+</html> 

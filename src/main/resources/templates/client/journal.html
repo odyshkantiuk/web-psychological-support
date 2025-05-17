@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('My Journal', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3"><i class="bi bi-journal-text me-2"></i>My Journal</h2>
+            <p class="lead">Track your thoughts, feelings, and progress over time.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newJournalEntryModal">
+                <i class="bi bi-plus-lg me-2"></i>New Entry
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div th:if="${journals.empty}" class="text-center py-5">
+                <i class="bi bi-journal fs-1 text-muted"></i>
+                <h4 class="mt-3">You haven't created any journal entries yet</h4>
+                <p class="text-muted">Start journaling to track your thoughts and feelings.</p>
+                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#newJournalEntryModal">
+                    <i class="bi bi-plus-lg me-2"></i>Create Your First Entry
+                </button>
+            </div>
+
+            <div th:unless="${journals.empty}" class="row">
+                <div th:each="journal : ${journals}" class="col-md-6 mb-4">
+                    <div class="card h-100 journal-card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0" th:text="${journal.title}">Journal Title</h5>
+                            <span th:if="${journal.moodRating != null}"
+                                  th:class="'mood-rating mood-rating-' + ${journal.moodRating}"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-placement="top"
+                                  th:title="'Mood: ' + ${journal.moodRating} + '/5'">
+                                    <i th:if="${journal.moodRating == 1}" class="bi bi-emoji-frown"></i>
+                                    <i th:if="${journal.moodRating == 2}" class="bi bi-emoji-expressionless"></i>
+                                    <i th:if="${journal.moodRating == 3}" class="bi bi-emoji-neutral"></i>
+                                    <i th:if="${journal.moodRating == 4}" class="bi bi-emoji-smile"></i>
+                                    <i th:if="${journal.moodRating == 5}" class="bi bi-emoji-laughing"></i>
+                                </span>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text text-muted mb-2">
+                                <small th:text="${#temporals.format(journal.createdAt, 'MMMM dd, yyyy - hh:mm a')}">
+                                    Date and Time
+                                </small>
+                            </p>
+                            <p class="card-text" th:text="${#strings.abbreviate(journal.content, 150)}">
+                                Journal content preview...
+                            </p>
+                        </div>
+                        <div class="card-footer bg-white d-flex justify-content-between">
+                            <div>
+                                    <span th:if="${journal.sharedWithPsychologistId != null}"
+                                          class="badge bg-info"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="top"
+                                          th:title="'Shared with ' + ${journal.sharedWithPsychologistName}">
+                                        <i class="bi bi-share me-1"></i>Shared
+                                    </span>
+                            </div>
+                            <div>
+                                <a th:href="@{'/client/journal/' + ${journal.id}}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-eye me-1"></i>View
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteJournalModal"
+                                        th:data-journal-id="${journal.id}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="newJournalEntryModal" tabindex="-1" aria-labelledby="newJournalEntryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newJournalEntryModalLabel">New Journal Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="journalForm" th:action="@{/api/journals}" method="post">
+                    <div class="modal-body">
+                        <input type="hidden" name="userId" th:value="${user.id}">
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Content</label>
+                            <textarea class="form-control" id="content" name="content" rows="6" required></textarea>
+                            <div class="form-text">Write about your thoughts, feelings, or experiences.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">How are you feeling today?</label>
+                            <input type="hidden" id="moodRating" name="moodRating">
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary mood-emoji" data-rating="1">
+                                    <i class="bi bi-emoji-frown fs-3"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary mood-emoji" data-rating="2">
+                                    <i class="bi bi-emoji-expressionless fs-3"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary mood-emoji" data-rating="3">
+                                    <i class="bi bi-emoji-neutral fs-3"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary mood-emoji" data-rating="4">
+                                    <i class="bi bi-emoji-smile fs-3"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary mood-emoji" data-rating="5">
+                                    <i class="bi bi-emoji-laughing fs-3"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Share with a Psychologist?</label>
+                            <select class="form-select" name="sharedWithPsychologistId">
+                                <option value="">Don't share</option>
+                                <option th:each="psychologist : ${psychologists}"
+                                        th:value="${psychologist.id}"
+                                        th:text="${psychologist.fullName}">
+                                    Dr. Name
+                                </option>
+                            </select>
+                            <div class="form-text">Your psychologist will be able to view this journal entry.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Entry</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteJournalModal" tabindex="-1" aria-labelledby="deleteJournalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteJournalModalLabel">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this journal entry? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteJournalForm" th:action="@{/api/journals}" method="post">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <input type="hidden" id="deleteJournalId" name="id">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButtons = document.querySelectorAll('[data-bs-target="#deleteJournalModal"]');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const journalId = this.getAttribute('data-journal-id');
+                    document.getElementById('deleteJournalId').value = journalId;
+                });
+            });
+
+            const deleteJournalForm = document.getElementById('deleteJournalForm');
+            if (deleteJournalForm) {
+                deleteJournalForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const journalId = document.getElementById('deleteJournalId').value;
+
+                    fetch(`/api/journals/${journalId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            throw new Error('Failed to delete journal');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to delete journal. Please try again.');
+                    });
+                });
+            }
+
+            if (new URLSearchParams(window.location.search).get('new') === 'true') {
+                const newJournalModal = new bootstrap.Modal(document.getElementById('newJournalEntryModal'));
+                newJournalModal.show();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const journalForm = document.getElementById('journalForm');
+
+            if (journalForm) {
+                journalForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const userId = document.querySelector('input[name="userId"]').value;
+                    const title = document.querySelector('input[name="title"]').value;
+                    const content = document.querySelector('textarea[name="content"]').value;
+                    const moodRating = document.querySelector('input[name="moodRating"]').value;
+                    const sharedWithPsychologistId = document.querySelector('select[name="sharedWithPsychologistId"]').value;
+
+                    const journalData = {
+                        userId: userId,
+                        title: title,
+                        content: content,
+                        moodRating: moodRating ? parseInt(moodRating) : null
+                    };
+
+                    if (sharedWithPsychologistId) {
+                        journalData.sharedWithPsychologistId = parseInt(sharedWithPsychologistId);
+                    }
+
+                    fetch('/api/journals', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''
+                        },
+                        body: JSON.stringify(journalData)
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                window.location.href = '/client/journal';
+                            } else {
+                                throw new Error('Failed to create journal entry');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Failed to create journal entry. Please try again.');
+                        });
+                });
+            }
+        });
+    </script>
+</section>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('Psychologists', ~{::section})}">
+<body>
+<section>
+    <style>
+        .psychologist-avatar {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+        }
+        .availability-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-3"><i class="bi bi-people me-2"></i>Find Psychologists</h2>
+            <p class="lead">Browse our network of qualified psychological professionals.</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form class="row g-3" th:action="@{/client/psychologists}" method="get">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search by name...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="showOnlyAvailable" name="showOnlyAvailable" value="true" th:checked="${showingAvailable}">
+                                <label class="form-check-label" for="showOnlyAvailable">Show only currently available</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100" id="applyFilters">Apply Filters</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div th:if="${psychologists == null || psychologists.empty}" class="col-12 text-center py-5">
+            <i class="bi bi-people fs-1 text-muted"></i>
+            <h4 class="mt-3">No psychologists found</h4>
+            <p class="text-muted">Please try different search criteria or check back later.</p>
+        </div>
+
+        <div th:unless="${psychologists == null || psychologists.empty}" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <div th:each="psychologist : ${psychologists}" class="col">
+                <div class="card h-100 psychologist-card position-relative">
+                    <span th:if="${availabilityMap.get(psychologist.id)}" class="badge rounded-pill bg-success availability-badge">
+                        <i class="bi bi-clock-fill me-1"></i>Available
+                    </span>
+                    <span th:unless="${availabilityMap.get(psychologist.id)}" class="badge rounded-pill bg-secondary availability-badge">
+                        <i class="bi bi-clock me-1"></i>Unavailable
+                    </span>
+                    <div class="card-body text-center">
+                        <div th:if="${psychologist.profilePicture}" class="mb-3">
+                            <img th:src="${psychologist.profilePicture}" class="rounded-circle psychologist-avatar"
+                                 alt="Profile Picture">
+                        </div>
+                        <div th:unless="${psychologist.profilePicture}" class="mb-3">
+                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto psychologist-avatar"
+                                 style="width: 100px; height: 100px;">
+                                <span class="text-white fs-1" th:text="${#strings.substring(psychologist.fullName, 0, 1)}">P</span>
+                            </div>
+                        </div>
+                        <h5 class="card-title" th:text="${psychologist.fullName}">Dr. Jane Smith</h5>
+                        <p class="card-text text-muted" th:text="${psychologist.email}">jane.smith@example.com</p>
+                        <p class="card-text" th:if="${psychologist.bio != null}" th:text="${#strings.abbreviate(psychologist.bio, 150)}">
+                            Bio information here...
+                        </p>
+                        <p class="card-text" th:unless="${psychologist.bio != null}">
+                            <span class="text-muted">No bio available</span>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-white text-center">
+                        <a th:href="@{'/client/appointments?psychologistId=' + ${psychologist.id}}" class="btn btn-primary me-2">
+                            <i class="bi bi-calendar-plus me-1"></i>Book Appointment
+                        </a>
+                        <a th:href="@{'/client/messages?psychologistId=' + ${psychologist.id}}" class="btn btn-outline-primary">
+                            <i class="bi bi-chat-dots me-1"></i>Message
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const applyFiltersBtn = document.getElementById('applyFilters');
+            const psychologistCards = document.querySelectorAll('.psychologist-card');
+            const showOnlyAvailableCheckbox = document.getElementById('showOnlyAvailable');
+
+            searchInput.addEventListener('input', function() {
+                const searchTerm = searchInput.value.toLowerCase();
+
+                psychologistCards.forEach(card => {
+                    const name = card.querySelector('.card-title').textContent.toLowerCase();
+                    const matchesSearch = searchTerm === '' || name.includes(searchTerm);
+
+                    if (matchesSearch) {
+                        card.closest('.col').style.display = '';
+                    } else {
+                        card.closest('.col').style.display = 'none';
+                    }
+                });
+            });
+
+        });
+    </script>
+</section>
+</body>
+</html>

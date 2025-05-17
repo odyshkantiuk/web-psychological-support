@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('View User', ~{::section})}">
+<body>
+<section>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a th:href="@{/admin/dashboard}" class="list-group-item list-group-item-action"
+                   th:classappend="${currentPath == '/admin/dashboard' ? 'active' : ''}">
+                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                </a>
+                <a th:href="@{/admin/users}" class="list-group-item list-group-item-action"
+                   th:classappend="${#strings.startsWith(currentPath, '/admin/users') ? 'active' : ''}">
+                    <i class="bi bi-people me-2"></i> Users
+                </a>
+                <a th:href="@{/admin/psychologists}" class="list-group-item list-group-item-action"
+                   th:classappend="${currentPath == '/admin/psychologists' ? 'active' : ''}">
+                    <i class="bi bi-person-badge me-2"></i> Psychologists
+                </a>
+                <a th:href="@{/admin/appointments}" class="list-group-item list-group-item-action"
+                   th:classappend="${currentPath == '/admin/appointments' ? 'active' : ''}">
+                    <i class="bi bi-calendar-check me-2"></i> Appointments
+                </a>
+                <a th:href="@{/admin/profile}" class="list-group-item list-group-item-action"
+                   th:classappend="${currentPath == '/admin/profile' ? 'active' : ''}">
+                    <i class="bi bi-person-gear me-2"></i> Profile
+                </a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">User Details</h4>
+                    <div>
+                        <a th:href="@{/admin/users/edit/{id}(id=${viewUser.id})}" class="btn btn-primary">
+                            <i class="bi bi-pencil me-2"></i> Edit User
+                        </a>
+                        <a th:href="@{/admin/users}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Users
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-4">
+                            <img th:if="${viewUser.profilePicture}" th:src="${viewUser.profilePicture}"
+                                 class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
+                            <img th:unless="${viewUser.profilePicture}" th:src="@{/images/default-profile.png}"
+                                 class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
+                            <h5 th:text="${viewUser.fullName}">User Name</h5>
+                            <span class="badge" th:classappend="${viewUser.role == T(com.psychsupport.webpsychologicalsupport.model.User.Role).ADMIN ? 'bg-danger' :
+                                                                   (viewUser.role == T(com.psychsupport.webpsychologicalsupport.model.User.Role).PSYCHOLOGIST ? 'bg-success' : 'bg-primary')}"
+                                  th:text="${viewUser.role}">Role</span>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Username:</div>
+                                <div class="col-md-8" th:text="${viewUser.username}">username</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Email:</div>
+                                <div class="col-md-8" th:text="${viewUser.email}">email</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Phone Number:</div>
+                                <div class="col-md-8" th:text="${viewUser.phoneNumber}">phone</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Bio:</div>
+                                <div class="col-md-8" th:text="${viewUser.bio != null ? viewUser.bio : 'No bio provided.'}">
+                                    Professional background and experience...
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Created At:</div>
+                                <div class="col-md-8" th:text="${#temporals.format(viewUser.createdAt, 'dd/MM/yyyy HH:mm')}">date</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Last Login:</div>
+                                <div class="col-md-8" th:text="${viewUser.lastLogin != null ? #temporals.format(viewUser.lastLogin, 'dd/MM/yyyy HH:mm') : 'Never'}">Never</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div th:if="${viewUser.role.name() == 'PSYCHOLOGIST'}" class="row mt-4">
+                        <div class="col-12">
+                            <p class="text-muted mb-1">Curriculum Vitae</p>
+                            <div th:if="${viewUser.cv}" class="mb-2">
+                                <a th:href="${viewUser.cv}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                    <i class="bi bi-file-earmark-text me-1"></i>View CV
+                                </a>
+                            </div>
+                            <div th:unless="${viewUser.cv}" class="text-muted">
+                                No CV uploaded yet.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

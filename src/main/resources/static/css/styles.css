@@ -1,0 +1,216 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    border-top-left-radius: 0.5rem !important;
+    border-top-right-radius: 0.5rem !important;
+}
+
+.card-footer {
+    border-bottom-left-radius: 0.5rem !important;
+    border-bottom-right-radius: 0.5rem !important;
+}
+
+.btn {
+    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #3b71ca;
+    border-color: #3b71ca;
+}
+
+.btn-primary:hover {
+    background-color: #305ea8;
+    border-color: #305ea8;
+}
+
+.btn-success {
+    background-color: #14a44d;
+    border-color: #14a44d;
+}
+
+.btn-success:hover {
+    background-color: #108a3f;
+    border-color: #108a3f;
+}
+
+.navbar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+.form-control {
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(59, 113, 202, 0.25);
+    border-color: #3b71ca;
+}
+
+.bg-primary {
+    background-color: #3b71ca !important;
+}
+
+.bg-success {
+    background-color: #14a44d !important;
+}
+
+.bg-info {
+    background-color: #54b4d3 !important;
+}
+
+.bg-warning {
+    background-color: #e4a11b !important;
+}
+
+.bg-danger {
+    background-color: #dc4c64 !important;
+}
+
+.chat-message {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    max-width: 80%;
+}
+
+.message-sent {
+    background-color: #3b71ca;
+    color: white;
+    border-top-right-radius: 0.25rem;
+    margin-left: auto;
+}
+
+.message-received {
+    background-color: #f1f1f1;
+    border-top-left-radius: 0.25rem;
+    margin-right: auto;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.message-sent .message-time {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.message-received .message-time {
+    color: #666 !important;
+}
+
+.chat-container {
+    height: 400px;
+    overflow-y: auto;
+}
+
+.journal-card {
+    margin-bottom: 1.5rem;
+}
+
+.mood-rating {
+    font-weight: bold;
+}
+
+.mood-rating-1 {
+    color: #dc4c64;
+}
+
+.mood-rating-2 {
+    color: #e67e22;
+}
+
+.mood-rating-3 {
+    color: #e4a11b;
+}
+
+.mood-rating-4 {
+    color: #54b4d3;
+}
+
+.mood-rating-5 {
+    color: #14a44d;
+}
+
+.appointment-time {
+    background-color: #f1f1f1;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.appointment-available {
+    border-left: 4px solid #14a44d;
+}
+
+.appointment-booked {
+    border-left: 4px solid #dc4c64;
+}
+
+.psychologist-card {
+    margin-bottom: 2rem;
+}
+
+.psychologist-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2.5rem;
+    }
+
+    .lead {
+        font-size: 1rem;
+    }
+}

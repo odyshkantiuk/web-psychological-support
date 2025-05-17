@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('My Appointments', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3"><i class="bi bi-calendar-check me-2"></i>My Appointments</h2>
+            <p class="lead">Schedule and manage your sessions with psychologists.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAppointmentModal">
+                <i class="bi bi-plus-lg me-2"></i>Schedule Appointment
+            </button>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>
+        <span th:text="${success}">Success message</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-circle me-2"></i>
+        <span th:text="${error}">Error message</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form class="row g-3">
+                        <div class="col-md-3">
+                            <label for="filterStatus" class="form-label">Status</label>
+                            <select id="filterStatus" class="form-select">
+                                <option value="">All</option>
+                                <option value="SCHEDULED">Scheduled</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                                <option value="NO_SHOW">No Show</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterPsychologist" class="form-label">Psychologist</label>
+                            <select id="filterPsychologist" class="form-select">
+                                <option value="">All</option>
+                                <option th:each="psychologist : ${psychologists}"
+                                        th:value="${psychologist.id}"
+                                        th:text="${psychologist.fullName}">
+                                    Dr. Name
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterDateFrom" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="filterDateFrom">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterDateTo" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="filterDateTo">
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="button" id="clearFilters" class="btn btn-secondary me-2">Clear</button>
+                            <button type="button" id="applyFilters" class="btn btn-primary">Apply Filters</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <h5 class="mb-0">Your Appointments</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active" data-view="all">All</button>
+                        <button type="button" class="btn btn-outline-primary" data-view="upcoming">Upcoming</button>
+                        <button type="button" class="btn btn-outline-primary" data-view="past">Past</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div th:if="${appointments.empty}" class="text-center py-4">
+                        <i class="bi bi-calendar2-x fs-1 text-muted"></i>
+                        <p class="mt-3">You don't have any appointments yet.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAppointmentModal">
+                            Schedule Your First Appointment
+                        </button>
+                    </div>
+                    <div th:unless="${appointments.empty}" class="table-responsive">
+                        <table class="table table-hover" id="appointmentsTable">
+                            <thead>
+                            <tr>
+                                <th>Psychologist</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="appointment : ${appointments}" th:data-status="${appointment.status}" th:data-psychologist="${appointment.psychologistId}" th:data-date="${#temporals.format(appointment.startTime, 'yyyy-MM-dd')}">
+                                <td th:text="${appointment.psychologistName}">Dr. Smith</td>
+                                <td th:text="${#temporals.format(appointment.startTime, 'MMMM dd, yyyy')}">May 10, 2025</td>
+                                <td th:text="${#temporals.format(appointment.startTime, 'hh:mm a') + ' - ' + #temporals.format(appointment.endTime, 'hh:mm a')}">10:00 AM - 11:00 AM</td>
+                                <td>
+                                            <span th:class="${appointment.status.name() == 'SCHEDULED' ? 'badge bg-primary' :
+                                                             appointment.status.name() == 'COMPLETED' ? 'badge bg-success' :
+                                                             appointment.status.name() == 'CANCELLED' ? 'badge bg-danger' : 'badge bg-warning'}"
+                                                  th:text="${appointment.status}">Scheduled</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a th:href="@{'/client/appointments/' + ${appointment.id}}" class="btn btn-outline-primary">View</a>
+                                        <a th:if="${appointment.status.name() == 'SCHEDULED'}"
+                                           th:href="@{'/client/messages?psychologistId=' + ${appointment.psychologistId}}"
+                                           class="btn btn-outline-success">Message</a>
+                                        <button th:if="${appointment.status.name() == 'SCHEDULED'}"
+                                                class="btn btn-outline-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#cancelAppointmentModal"
+                                                th:data-appointment-id="${appointment.id}"
+                                                th:data-psychologist-id="${appointment.psychologistId}">Cancel</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="newAppointmentModal" tabindex="-1" aria-labelledby="newAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newAppointmentModalLabel">Schedule New Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/client/appointments/create}" method="post" id="appointmentForm">
+                    <div class="modal-body">
+                        <input type="hidden" name="clientId" th:value="${user.id}">
+                        <input type="hidden" name="startTime" id="startTime">
+                        <input type="hidden" name="endTime" id="endTime">
+
+                        <div class="mb-3">
+                            <label for="psychologistId" class="form-label">Select Psychologist</label>
+                            <select class="form-select" id="psychologistId" name="psychologistId" required>
+                                <option value="">-- Choose a psychologist --</option>
+                                <option th:each="psychologist : ${psychologists}"
+                                        th:value="${psychologist.id}"
+                                        th:text="${psychologist.fullName}">
+                                    Dr. Name
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="appointmentDate" class="form-label">Select Date</label>
+                            <input type="date" class="form-control" id="appointmentDate" required
+                                   th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Available Times</label>
+                            <div id="availableTimesContainer" class="mt-2">
+                                <div class="alert alert-info">
+                                    Please select a psychologist and date to see available times.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any specific concerns or topics you'd like to discuss?"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Schedule Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="cancelAppointmentModal" tabindex="-1" aria-labelledby="cancelAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelAppointmentModalLabel">Cancel Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="cancelAppointmentForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="cancelAppointmentId" name="id">
+                        <input type="hidden" id="cancelPsychologistId" name="psychologistId">
+
+                        <p>Are you sure you want to cancel this appointment? This action cannot be undone.</p>
+
+                        <div class="mb-3">
+                            <label for="cancelReason" class="form-label">Reason for Cancellation (Optional)</label>
+                            <textarea class="form-control" id="cancelReason" name="cancelReason" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep It</button>
+                        <button type="submit" class="btn btn-danger">Yes, Cancel Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script th:src="@{/js/client-appointments.js}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const appointmentForm = document.getElementById('appointmentForm');
+        const psychologistSelect = document.getElementById('psychologistId');
+        const dateInput = document.getElementById('appointmentDate');
+        const availableTimesContainer = document.getElementById('availableTimesContainer');
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+
+        const filterStatus = document.getElementById('filterStatus');
+        const filterPsychologist = document.getElementById('filterPsychologist');
+        const filterDateFrom = document.getElementById('filterDateFrom');
+        const filterDateTo = document.getElementById('filterDateTo');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        const appointmentsTable = document.getElementById('appointmentsTable');
+
+        function applyFilters() {
+            const status = filterStatus.value;
+            const psychologist = filterPsychologist.value;
+            const dateFrom = filterDateFrom.value ? new Date(filterDateFrom.value) : null;
+            const dateTo = filterDateTo.value ? new Date(filterDateTo.value) : null;
+
+            const rows = appointmentsTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+            for (let row of rows) {
+                let showRow = true;
+
+                if (status && row.dataset.status !== status) {
+                    showRow = false;
+                }
+
+                if (psychologist && row.dataset.psychologist !== psychologist) {
+                    showRow = false;
+                }
+
+                const appointmentDate = new Date(row.dataset.date);
+                if (dateFrom && appointmentDate < dateFrom) {
+                    showRow = false;
+                }
+                if (dateTo) {
+                    const endOfDay = new Date(dateTo);
+                    endOfDay.setHours(23, 59, 59, 999);
+                    if (appointmentDate > endOfDay) {
+                        showRow = false;
+                    }
+                }
+
+                row.style.display = showRow ? '' : 'none';
+            }
+        }
+
+        function clearFilters() {
+            filterStatus.value = '';
+            filterPsychologist.value = '';
+            filterDateFrom.value = '';
+            filterDateTo.value = '';
+
+            const rows = appointmentsTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            for (let row of rows) {
+                row.style.display = '';
+            }
+        }
+
+        applyFiltersBtn.addEventListener('click', applyFilters);
+        clearFiltersBtn.addEventListener('click', clearFilters);
+
+        const viewButtons = document.querySelectorAll('[data-view]');
+        viewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                viewButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+
+                const view = this.dataset.view;
+                const rows = appointmentsTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+                const now = new Date();
+
+                for (let row of rows) {
+                    const appointmentDate = new Date(row.dataset.date);
+                    let showRow = true;
+
+                    switch (view) {
+                        case 'upcoming':
+                            showRow = appointmentDate >= now;
+                            break;
+                        case 'past':
+                            showRow = appointmentDate < now;
+                            break;
+                        case 'all':
+                        default:
+                            showRow = true;
+                    }
+
+                    row.style.display = showRow ? '' : 'none';
+                }
+            });
+        });
+
+        function updateAvailableTimes() {
+            const psychologistId = psychologistSelect.value;
+            const date = dateInput.value;
+
+            if (psychologistId && date) {
+                availableTimesContainer.innerHTML = '<div class="alert alert-info">Loading available times...</div>';
+
+                fetch(`/api/appointments/available?psychologistId=${psychologistId}&date=${date}`)
+                    .then(response => response.json())
+                    .then(times => {
+                        if (times.length === 0) {
+                            availableTimesContainer.innerHTML = '<div class="alert alert-warning">No available times for this date.</div>';
+                            return;
+                        }
+
+                        let html = '<div class="row g-2">';
+                        times.forEach(time => {
+                            const startTime = new Date(time.startTime);
+                            const endTime = new Date(time.endTime);
+                            const timeStr = `${startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+
+                            html += `
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="timeSlot" 
+                                               id="time${time.startTime}" value="${time.startTime}" required>
+                                        <label class="form-check-label" for="time${time.startTime}">
+                                            ${timeStr}
+                                        </label>
+                                    </div>
+                                </div>`;
+                        });
+                        html += '</div>';
+                        availableTimesContainer.innerHTML = html;
+
+                        document.querySelectorAll('input[name="timeSlot"]').forEach(radio => {
+                            radio.addEventListener('change', function() {
+                                const selectedTime = new Date(this.value);
+                                const endTime = new Date(selectedTime.getTime() + 60 * 60 * 1000);
+                                startTimeInput.value = selectedTime.toISOString();
+                                endTimeInput.value = endTime.toISOString();
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        availableTimesContainer.innerHTML = '<div class="alert alert-danger">Error loading available times.</div>';
+                        console.error('Error:', error);
+                    });
+            } else {
+                availableTimesContainer.innerHTML = '<div class="alert alert-info">Please select a psychologist and date to see available times.</div>';
+            }
+        }
+
+        psychologistSelect.addEventListener('change', updateAvailableTimes);
+        dateInput.addEventListener('change', updateAvailableTimes);
+
+        appointmentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!startTimeInput.value || !endTimeInput.value) {
+                alert('Please select an available time slot.');
+                return;
+            }
+
+            const formData = new FormData(this);
+            const data = new URLSearchParams();
+            for (const pair of formData) {
+                data.append(pair[0], pair[1]);
+            }
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: data.toString()
+            })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        throw new Error('Failed to schedule appointment');
+                    }
+                })
+                .catch(error => {
+                    alert('Error scheduling appointment: ' + error.message);
+                });
+        });
+
+        const cancelAppointmentModal = document.getElementById('cancelAppointmentModal');
+        if (cancelAppointmentModal) {
+            cancelAppointmentModal.addEventListener('show.bs.modal', function(event) {
+                console.log('Cancel modal opening');
+                const button = event.relatedTarget;
+                const appointmentId = button.getAttribute('data-appointment-id');
+                const psychologistId = button.getAttribute('data-psychologist-id');
+                
+                console.log('Appointment ID:', appointmentId);
+                console.log('Psychologist ID:', psychologistId);
+                
+                document.getElementById('cancelAppointmentId').value = appointmentId;
+                document.getElementById('cancelPsychologistId').value = psychologistId;
+            });
+        }
+
+        const cancelAppointmentForm = document.getElementById('cancelAppointmentForm');
+        if (cancelAppointmentForm) {
+            console.log('Cancel form found');
+            cancelAppointmentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Cancel form submitted');
+                
+                const appointmentId = document.getElementById('cancelAppointmentId').value;
+                const psychologistId = document.getElementById('cancelPsychologistId').value;
+                const cancelReason = document.getElementById('cancelReason').value || 'Cancelled by client';
+                
+                console.log('Appointment ID:', appointmentId);
+                console.log('Psychologist ID:', psychologistId);
+                
+                if (!appointmentId || !psychologistId) {
+                    console.error('Missing required data');
+                    alert('Error: Missing appointment information. Please try again.');
+                    return;
+                }
+
+                const submitButton = this.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                const originalText = submitButton.textContent;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+
+                let url = `/api/appointments/${appointmentId}/status?status=CANCELLED&psychologistId=${psychologistId}`;
+
+                fetch(url, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        notes: cancelReason
+                    })
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error('Failed to cancel appointment: ' + (text || 'Unknown error'));
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+
+                    const modal = bootstrap.Modal.getInstance(cancelAppointmentModal);
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    alert('Appointment cancelled successfully!');
+
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message || 'Failed to cancel appointment. Please try again.');
+                })
+                .finally(() => {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                });
+            });
+        } else {
+            console.error('Cancel form not found');
+        }
+    });
+</script>
+</body>
+</html>

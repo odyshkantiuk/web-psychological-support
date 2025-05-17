@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('Appointment Management', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3"><i class="bi bi-calendar-check me-2"></i>Appointment Management</h2>
+            <p class="lead">Monitor and manage all appointments in the system.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportAppointmentsModal">
+                <i class="bi bi-download me-2"></i>Export Data
+            </button>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form class="row g-3">
+                        <div class="col-md-2">
+                            <label for="filterStatus" class="form-label">Status</label>
+                            <select id="filterStatus" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="SCHEDULED">Scheduled</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                                <option value="NO_SHOW">No Show</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterPsychologist" class="form-label">Psychologist</label>
+                            <select id="filterPsychologist" class="form-select">
+                                <option value="">All Psychologists</option>
+                                <option th:each="psychologist : ${psychologists}"
+                                        th:value="${psychologist.id}"
+                                        th:text="${psychologist.fullName}">
+                                    Dr. Name
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filterDateFrom" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="filterDateFrom">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filterDateTo" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="filterDateTo">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sortBy" class="form-label">Sort By</label>
+                            <select class="form-select" id="sortBy">
+                                <option value="created_desc">Newest First</option>
+                                <option value="created_asc">Oldest First</option>
+                                <option value="date_desc">Date (Newest)</option>
+                                <option value="date_asc">Date (Oldest)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1">Total Appointments</h6>
+                            <h3 class="card-title mb-0" th:text="${appointments != null ? #lists.size(appointments) : 0}">0</h3>
+                        </div>
+                        <i class="bi bi-calendar2-check fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1">Completed</h6>
+                            <h3 class="card-title mb-0" th:text="${appointments != null ? #lists.size(appointments.?[status.name() == 'COMPLETED']) : 0}">0</h3>
+                        </div>
+                        <i class="bi bi-check-circle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1">Upcoming</h6>
+                            <h3 class="card-title mb-0" th:text="${appointments != null ? #lists.size(appointments.?[status.name() == 'SCHEDULED']) : 0}">0</h3>
+                        </div>
+                        <i class="bi bi-clock fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1">Cancelled</h6>
+                            <h3 class="card-title mb-0" th:text="${appointments != null ? #lists.size(appointments.?[status.name() == 'CANCELLED' || status.name() == 'NO_SHOW']) : 0}">0</h3>
+                        </div>
+                        <i class="bi bi-x-circle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div th:if="${appointments == null || appointments.empty}" class="text-center py-5">
+                        <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                        <h4 class="mt-3">No appointments found</h4>
+                        <p class="text-muted">There are no appointments in the system yet.</p>
+                    </div>
+
+                    <div th:unless="${appointments == null || appointments.empty}" class="table-responsive">
+                        <table class="table table-hover" id="appointmentsTable">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Psychologist</th>
+                                <th>Client</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="appointment : ${appointments}"
+                                th:data-status="${appointment.status}"
+                                th:data-psychologist="${appointment.psychologistId}"
+                                th:data-date="${#temporals.format(appointment.startTime, 'yyyy-MM-dd')}">
+                                <td th:text="${appointment.id}">1</td>
+                                <td th:text="${appointment.psychologistName}">Dr. Jane Smith</td>
+                                <td th:text="${appointment.clientName}">John Doe</td>
+                                <td th:text="${#temporals.format(appointment.startTime, 'MMMM dd, yyyy')}">May 10, 2025</td>
+                                <td th:text="${#temporals.format(appointment.startTime, 'hh:mm a') + ' - ' + #temporals.format(appointment.endTime, 'hh:mm a')}">10:00 AM - 11:00 AM</td>
+                                <td>
+                                        <span th:class="${appointment.status.name() == 'SCHEDULED' ? 'badge bg-primary' :
+                                                         appointment.status.name() == 'COMPLETED' ? 'badge bg-success' :
+                                                         appointment.status.name() == 'CANCELLED' ? 'badge bg-danger' : 'badge bg-warning'}"
+                                              th:text="${appointment.status}">Scheduled</span>
+                                </td>
+                                <td th:text="${#temporals.format(appointment.createdAt, 'MMM dd, yyyy')}">Jan 1, 2023</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a th:href="@{/admin/appointments/{id}(id=${appointment.id})}" class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelAppointmentModal"
+                                                th:data-appointment-id="${appointment.id}" th:disabled="${appointment.status.name() != 'SCHEDULED'}">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <nav th:if="${totalPages > 1}" aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled' : ''">
+                                <a class="page-link" th:href="@{/admin/appointments(page=${currentPage - 1}, size=${pageSize}, sort=${currentSort})}" 
+                                   th:unless="${currentPage == 0}">Previous</a>
+                                <span class="page-link" th:if="${currentPage == 0}">Previous</span>
+                            </li>
+
+                            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                                class="page-item" 
+                                th:classappend="${i == currentPage} ? 'active' : ''">
+                                <a class="page-link" th:href="@{/admin/appointments(page=${i}, size=${pageSize}, sort=${currentSort})}" 
+                                   th:text="${i + 1}">1</a>
+                            </li>
+
+                            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled' : ''">
+                                <a class="page-link" th:href="@{/admin/appointments(page=${currentPage + 1}, size=${pageSize}, sort=${currentSort})}" 
+                                   th:unless="${currentPage == totalPages - 1}">Next</a>
+                                <span class="page-link" th:if="${currentPage == totalPages - 1}">Next</span>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="cancelAppointmentModal" tabindex="-1" aria-labelledby="cancelAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelAppointmentModalLabel">Cancel Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="cancelAppointmentForm" method="post">
+                    <div class="modal-body">
+                        <p>Are you sure you want to cancel this appointment?</p>
+                        <p class="text-danger">This action cannot be undone.</p>
+
+                        <div class="form-group mb-3">
+                            <label for="cancelReason" class="form-label">Reason for Cancellation</label>
+                            <textarea class="form-control" id="cancelReason" name="cancelReason" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-danger">Cancel Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="exportAppointmentsModal" tabindex="-1" aria-labelledby="exportAppointmentsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exportAppointmentsModalLabel">Export Appointment Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Select the export options below:</p>
+
+                    <div class="mb-3">
+                        <label for="exportDateRange" class="form-label">Date Range</label>
+                        <select class="form-select" id="exportDateRange">
+                            <option value="all">All Time</option>
+                            <option value="current_month">Current Month</option>
+                            <option value="last_month">Last Month</option>
+                            <option value="last_3_months">Last 3 Months</option>
+                            <option value="last_6_months">Last 6 Months</option>
+                            <option value="last_year">Last Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+
+                    <div id="customDateRange" class="row mb-3" style="display: none;">
+                        <div class="col-md-6">
+                            <label for="exportStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="exportStartDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="exportEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="exportEndDate">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="exportFormat" class="form-label">Export Format</label>
+                        <select class="form-select" id="exportFormat">
+                            <option value="csv">CSV</option>
+                            <option value="excel">Excel</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-label">Include Fields</div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeIds" checked>
+                            <label class="form-check-label" for="includeIds">
+                                IDs
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeNames" checked>
+                            <label class="form-check-label" for="includeNames">
+                                Names (Psychologist, Client)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeDateTime" checked>
+                            <label class="form-check-label" for="includeDateTime">
+                                Date and Time
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeStatus" checked>
+                            <label class="form-check-label" for="includeStatus">
+                                Status
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeNotes">
+                            <label class="form-check-label" for="includeNotes">
+                                Notes
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="downloadExport">
+                        <i class="bi bi-download me-1"></i>Download
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sortBySelect = document.getElementById('sortBy');
+            if (sortBySelect) {
+                sortBySelect.value = '[[${currentSort}]]';
+                
+                sortBySelect.addEventListener('change', function() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('sort', this.value);
+                    urlParams.set('page', '0');
+                    window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+                });
+            }
+
+            const filterStatus = document.getElementById('filterStatus');
+            const filterPsychologist = document.getElementById('filterPsychologist');
+            const filterDateFrom = document.getElementById('filterDateFrom');
+            const filterDateTo = document.getElementById('filterDateTo');
+            const tableRows = document.querySelectorAll('#appointmentsTable tbody tr');
+
+            function applyFilters() {
+                const status = filterStatus ? filterStatus.value : '';
+                const psychologist = filterPsychologist ? filterPsychologist.value : '';
+                const dateFrom = filterDateFrom ? filterDateFrom.value : '';
+                const dateTo = filterDateTo ? filterDateTo.value : '';
+
+                tableRows.forEach(row => {
+                    let showRow = true;
+
+                    if (status && row.getAttribute('data-status') !== status) {
+                        showRow = false;
+                    }
+
+                    if (showRow && psychologist && row.getAttribute('data-psychologist') !== psychologist) {
+                        showRow = false;
+                    }
+
+                    const rowDate = row.getAttribute('data-date');
+                    if (showRow && dateFrom && rowDate < dateFrom) {
+                        showRow = false;
+                    }
+                    if (showRow && dateTo && rowDate > dateTo) {
+                        showRow = false;
+                    }
+
+                    row.style.display = showRow ? '' : 'none';
+                });
+            }
+
+            if (filterStatus) filterStatus.addEventListener('change', applyFilters);
+            if (filterPsychologist) filterPsychologist.addEventListener('change', applyFilters);
+            if (filterDateFrom) filterDateFrom.addEventListener('change', applyFilters);
+            if (filterDateTo) filterDateTo.addEventListener('change', applyFilters);
+
+            const cancelAppointmentModal = document.getElementById('cancelAppointmentModal');
+            if (cancelAppointmentModal) {
+                cancelAppointmentModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const appointmentId = button.getAttribute('data-appointment-id');
+                    document.getElementById('cancelAppointmentForm').action = `/admin/appointments/${appointmentId}/cancel`;
+                });
+            }
+
+            const exportDateRange = document.getElementById('exportDateRange');
+            const customDateRange = document.getElementById('customDateRange');
+
+            if (exportDateRange && customDateRange) {
+                exportDateRange.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        customDateRange.style.display = 'flex';
+                    } else {
+                        customDateRange.style.display = 'none';
+                    }
+                });
+            }
+
+            const downloadExport = document.getElementById('downloadExport');
+            if (downloadExport) {
+                downloadExport.addEventListener('click', function() {
+                    const format = document.getElementById('exportFormat').value;
+                    const dateRange = document.getElementById('exportDateRange').value;
+
+                    let startDate = '';
+                    let endDate = '';
+
+                    if (dateRange === 'custom') {
+                        startDate = document.getElementById('exportStartDate').value;
+                        endDate = document.getElementById('exportEndDate').value;
+
+                        if (!startDate || !endDate) {
+                            alert('Please select both start and end dates for custom range');
+                            return;
+                        }
+                    }
+
+                    const includeIds = document.getElementById('includeIds').checked;
+                    const includeNames = document.getElementById('includeNames').checked;
+                    const includeDateTime = document.getElementById('includeDateTime').checked;
+                    const includeStatus = document.getElementById('includeStatus').checked;
+                    const includeNotes = document.getElementById('includeNotes').checked;
+
+                    let exportUrl = `/admin/appointments/export?format=${format}&dateRange=${dateRange}`;
+
+                    if (dateRange === 'custom') {
+                        exportUrl += `&startDate=${startDate}&endDate=${endDate}`;
+                    }
+
+                    exportUrl += `&includeIds=${includeIds}&includeNames=${includeNames}`;
+                    exportUrl += `&includeDateTime=${includeDateTime}&includeStatus=${includeStatus}`;
+                    exportUrl += `&includeNotes=${includeNotes}`;
+
+                    window.location.href = exportUrl;
+
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('exportAppointmentsModal'));
+                    modal.hide();
+                });
+            }
+        });
+    </script>
+</section>
+</body>
+</html>

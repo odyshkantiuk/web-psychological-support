@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('Psychologist Dashboard', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-3"><i class="bi bi-grid-1x2 me-2"></i>Psychologist Dashboard</h2>
+            <p class="lead">Welcome back, <span th:text="${user.fullName}">Dr. Smith</span>!</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-primary h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                            <i class="bi bi-calendar-check text-white fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="card-subtitle text-muted">Upcoming Appointments</h6>
+                            <h2 class="card-title mb-0" th:text="${appointments != null ? #lists.size(appointments.?[status.name() == 'SCHEDULED']) : 0}">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <a th:href="@{/psychologist/appointments}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-success h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-success d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                            <i class="bi bi-people text-white fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="card-subtitle text-muted">Current Clients</h6>
+                            <h2 class="card-title mb-0" th:if="${appointments != null}" th:text="${#sets.size(#sets.toSet(appointments.![clientId]))}">0</h2>
+                            <h2 class="card-title mb-0" th:unless="${appointments != null}">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <a th:href="@{/psychologist/clients}" class="btn btn-sm btn-outline-success">View All</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-info h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-info d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                            <i class="bi bi-journal-text text-white fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="card-subtitle text-muted">Shared Journals</h6>
+                            <h2 class="card-title mb-0" th:text="${journals != null ? #lists.size(journals) : 0}">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <a th:href="@{/psychologist/journals}" class="btn btn-sm btn-outline-info">View All</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Upcoming Appointments</h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${appointments == null || #lists.isEmpty(appointments)}" class="text-center py-4">
+                        <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                        <p class="mt-3">You don't have any upcoming appointments.</p>
+                        <p>Set your availability to allow clients to book appointments with you.</p>
+                    </div>
+                    <div th:unless="${appointments == null || #lists.isEmpty(appointments)}" class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="appointment : ${appointments}">
+                                <td th:text="${appointment.clientName}">John Doe</td>
+                                <td th:text="${#temporals.format(appointment.startTime, 'MMMM dd, yyyy')}">May 10, 2025</td>
+                                <td th:text="${#temporals.format(appointment.startTime, 'hh:mm a') + ' - ' + #temporals.format(appointment.endTime, 'hh:mm a')}">10:00 AM - 11:00 AM</td>
+                                <td>
+                                    <span th:class="${appointment.status.name() == 'SCHEDULED' ? 'badge bg-primary' :
+                                                     appointment.status.name() == 'COMPLETED' ? 'badge bg-success' :
+                                                     appointment.status.name() == 'CANCELLED' ? 'badge bg-danger' : 'badge bg-warning'}"
+                                          th:text="${appointment.status}">Scheduled</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a th:href="@{'/psychologist/appointment/' + ${appointment.id}}" class="btn btn-outline-primary">View</a>
+                                        <a th:if="${appointment.status.name() == 'SCHEDULED'}"
+                                           th:href="@{'/psychologist/messages?clientId=' + ${appointment.clientId}}"
+                                           class="btn btn-outline-success">Message</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-end">
+                    <a th:href="@{/psychologist/appointments}" class="btn btn-primary">Manage Appointments</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Recent Shared Journals</h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${journals == null || #lists.isEmpty(journals)}" class="text-center py-4">
+                        <i class="bi bi-journal-x fs-1 text-muted"></i>
+                        <p class="mt-3">No journals have been shared with you yet.</p>
+                        <p>Clients can choose to share their journal entries with you.</p>
+                    </div>
+                    <div th:unless="${journals == null || #lists.isEmpty(journals)}" class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th>Title</th>
+                                <th>Date</th>
+                                <th>Mood</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="journal : ${journals}">
+                                <td th:text="${journal.userName}">John Doe</td>
+                                <td th:text="${journal.title}">My Thoughts Today</td>
+                                <td th:text="${#temporals.format(journal.createdAt, 'MMMM dd, yyyy')}">May 10, 2025</td>
+                                <td>
+                                    <span th:if="${journal.moodRating != null}"
+                                          th:class="'mood-rating mood-rating-' + ${journal.moodRating}">
+                                        <i th:if="${journal.moodRating == 1}" class="bi bi-emoji-frown"></i>
+                                        <i th:if="${journal.moodRating == 2}" class="bi bi-emoji-expressionless"></i>
+                                        <i th:if="${journal.moodRating == 3}" class="bi bi-emoji-neutral"></i>
+                                        <i th:if="${journal.moodRating == 4}" class="bi bi-emoji-smile"></i>
+                                        <i th:if="${journal.moodRating == 5}" class="bi bi-emoji-laughing"></i>
+                                    </span>
+                                    <span th:unless="${journal.moodRating != null}">-</span>
+                                </td>
+                                <td>
+                                    <a th:href="@{'/psychologist/journal/' + ${journal.id}}" class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-end">
+                    <a th:href="@{/psychologist/journals}" class="btn btn-primary">View All Journals</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="mb-3"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
+        </div>
+        <div class="col-md-3">
+            <a th:href="@{/psychologist/appointments}" class="text-decoration-none">
+                <div class="card text-center h-100 hover-shadow">
+                    <div class="card-body py-4">
+                        <i class="bi bi-calendar-week fs-1 text-primary mb-3"></i>
+                        <h5 class="card-title">Manage Schedule</h5>
+                        <p class="card-text text-muted">Update your availability</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a th:href="@{/psychologist/clients}" class="text-decoration-none">
+                <div class="card text-center h-100 hover-shadow">
+                    <div class="card-body py-4">
+                        <i class="bi bi-people fs-1 text-success mb-3"></i>
+                        <h5 class="card-title">Client List</h5>
+                        <p class="card-text text-muted">View and manage your clients</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a th:href="@{/psychologist/messages}" class="text-decoration-none">
+                <div class="card text-center h-100 hover-shadow">
+                    <div class="card-body py-4">
+                        <i class="bi bi-chat-dots fs-1 text-info mb-3"></i>
+                        <h5 class="card-title">Messages</h5>
+                        <p class="card-text text-muted">Contact your clients</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a th:href="@{/psychologist/profile}" class="text-decoration-none">
+                <div class="card text-center h-100 hover-shadow">
+                    <div class="card-body py-4">
+                        <i class="bi bi-person-gear fs-1 text-warning mb-3"></i>
+                        <h5 class="card-title">Update Profile</h5>
+                        <p class="card-text text-muted">Manage your profile information</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-light border-0">
+                <div class="card-body p-4 text-center">
+                    <i class="bi bi-quote fs-1 text-primary mb-3"></i>
+                    <blockquote class="blockquote">
+                        <p>"The good life is a process, not a state of being. It is a direction, not a destination."</p>
+                    </blockquote>
+                    <figcaption class="blockquote-footer mt-2">
+                        Carl Rogers
+                    </figcaption>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

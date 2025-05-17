@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('My Appointments', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3"><i class="bi bi-calendar-check me-2"></i>My Appointments</h2>
+            <p class="lead">Schedule and manage your sessions with psychologists.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAppointmentModal">
+                <i class="bi bi-plus-lg me-2"></i>Schedule Appointment
+            </button>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>
+        <span th:text="${success}">Success message</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-circle me-2"></i>
+        <span th:text="${error}">Error message</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form class="row g-3" th:action="@{/client/appointments}" method="get">
+                        <div class="col-md-3">
+                            <label for="filterStatus" class="form-label">Status</label>
+                            <select id="filterStatus" name="status" class="form-select">
+                                <option value="">All</option>
+                                <option value="SCHEDULED">Scheduled</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                                <option value="NO_SHOW">No Show</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterPsychologist" class="form-label">Psychologist</label>
+                            <select id="filterPsychologist" name="psychologistId" class="form-select">
+                                <option value="">All</option>
+                                <option th:each="psychologist : ${psychologists}"
+                                        th:value="${psychologist.id}"
+                                        th:text="${psychologist.fullName}">
+                                    Dr. Name
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterDateFrom" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="filterDateFrom" name="dateFrom">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filterDateTo" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="filterDateTo" name="dateTo">
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="reset" class="btn btn-secondary me-2">Clear</button>
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <h5 class="mb-0">Your Appointments</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a th:href="@{/client/appointments}" class="btn btn-outline-primary active">All</a>
+                        <a th:href="@{/client/appointments(view='upcoming')}" class="btn btn-outline-primary">Upcoming</a>
+                        <a th:href="@{/client/appointments(view='past')}" class="btn btn-outline-primary">Past</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div th:if="${appointments.empty}" class="text-center py-4">
+                        <i class="bi bi-calendar2-x fs-1 text-muted"></i>
+                        <p class="mt-3">You don't have any appointments yet.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAppointmentModal">
+                            Schedule Your First Appointment
+                        </button>
+                    </div>
+                    <div th:unless="${appointments.empty}" class="table-responsive">
+                        <table class="table table-hover" id="appointmentsTable">
+                            <thead>
+                            <tr>
+                                <th>Psychologist</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="appointment : ${appointments}" th:data-status="${appointment.status}" th:data-psychologist="${appointment.psychologistId}" th:data-date="${#temporals.format(appointment.startTime, 'yyyy-MM-dd')}">
+                                <td th:text="${appointment.psychologistName}">Dr. Smith</td>
+                                <td th:text="${#temporals.format(appointment.startTime, 'MMMM dd, yyyy')}">May 10, 2025</td>
+                                <td th:text="${#temporals.format(appointment.startTime, 'hh:mm a') + ' - ' + #temporals.format(appointment.endTime, 'hh:mm a')}">10:00 AM - 11:00 AM</td>
+                                <td>
+                                            <span th:class="${appointment.status.name() == 'SCHEDULED' ? 'badge bg-primary' :
+                                                             appointment.status.name() == 'COMPLETED' ? 'badge bg-success' :
+                                                             appointment.status.name() == 'CANCELLED' ? 'badge bg-danger' : 'badge bg-warning'}"
+                                                  th:text="${appointment.status}">Scheduled</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a th:href="@{'/client/appointments/' + ${appointment.id}}" class="btn btn-outline-primary">View</a>
+                                        <a th:if="${appointment.status.name() == 'SCHEDULED'}"
+                                           th:href="@{'/client/messages?psychologistId=' + ${appointment.psychologistId}}"
+                                           class="btn btn-outline-success">Message</a>
+
+                                        <a th:if="${appointment.status.name() == 'SCHEDULED'}"
+                                           th:href="@{'/client/appointments/cancel?id=' + ${appointment.id} + '&psychologistId=' + ${appointment.psychologistId}}"
+                                           class="btn btn-outline-danger"
+                                           onclick="return confirm('Are you sure you want to cancel this appointment?');">
+                                            Cancel
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="newAppointmentModal" tabindex="-1" aria-labelledby="newAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newAppointmentModalLabel">Schedule New Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/client/appointments/create}" method="post" id="appointmentForm">
+                    <div class="modal-body">
+                        <input type="hidden" name="clientId" th:value="${user.id}">
+                        <input type="hidden" name="startTime" id="startTime">
+                        <input type="hidden" name="endTime" id="endTime">
+
+                        <div class="mb-3">
+                            <label for="psychologistId" class="form-label">Select Psychologist</label>
+                            <select class="form-select" id="psychologistId" name="psychologistId" required>
+                                <option value="">-- Choose a psychologist --</option>
+                                <option th:each="psychologist : ${psychologists}"
+                                        th:value="${psychologist.id}"
+                                        th:text="${psychologist.fullName}">
+                                    Dr. Name
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="appointmentDate" class="form-label">Select Date</label>
+                            <input type="date" class="form-control" id="appointmentDate" required
+                                   th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Available Times</label>
+                            <div id="availableTimesContainer" class="mt-2">
+                                <div class="alert alert-info">
+                                    Please select a psychologist and date to see available times.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any specific concerns or topics you'd like to discuss?"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Schedule Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

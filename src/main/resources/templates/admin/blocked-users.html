@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('Blocked Users Management', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3"><i class="bi bi-shield-lock me-2"></i>Blocked Users Management</h2>
+            <p class="lead">Manage accounts that have been blocked due to failed login attempts.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a th:href="@{/admin/dashboard}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${success}">Success message</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-lock-fill me-1"></i>Currently Blocked Users</h5>
+                
+                <form th:if="${!blockedUsers.isEmpty()}" th:action="@{/admin/security/unblock-all}" method="post" class="m-0"
+                      onsubmit="return confirm('Are you sure you want to unblock all users?');">
+                    <button type="submit" class="btn btn-warning btn-sm">
+                        <i class="bi bi-unlock-fill me-1"></i>Unblock All
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info mb-4">
+                <p><strong><i class="bi bi-info-circle me-2"></i>Information:</strong></p>
+                <p>Users are automatically blocked after <span th:text="${maxAttempts}">5</span> failed login attempts. 
+                   Blocks automatically expire after <span th:text="${blockDuration}">15</span> minutes.</p>
+                <p>As an administrator, you can manually unblock users before the timeout period expires.</p>
+            </div>
+            
+            <div th:if="${blockedUsers.isEmpty()}" class="alert alert-success">
+                <i class="bi bi-check-circle me-2"></i>There are currently no blocked users.
+            </div>
+            
+            <div th:if="${!blockedUsers.isEmpty()}" class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Username</th>
+                            <th>Failed Attempts</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="entry : ${blockedUsers}">
+                            <td th:text="${entry.key}">username</td>
+                            <td th:text="${entry.value}">5</td>
+                            <td class="text-center">
+                                <form th:action="@{/admin/security/unblock/{username}(username=${entry.key})}" method="post" class="m-0">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-unlock me-1"></i>Unblock
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

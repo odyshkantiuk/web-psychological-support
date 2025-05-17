@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{main-layout :: layout('Appointment Details', ~{::section})}">
+<body>
+<section>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-3"><i class="bi bi-calendar-event me-2"></i>Appointment Details</h2>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a th:href="@{/psychologist/appointments}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Appointments
+            </a>
+        </div>
+    </div>
+
+    <div class="row" th:if="${appointment != null}">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Appointment Information</h5>
+                    <span th:class="${appointment.status.name() == 'SCHEDULED' ? 'badge bg-primary' :
+                                      appointment.status.name() == 'COMPLETED' ? 'badge bg-success' :
+                                      appointment.status.name() == 'CANCELLED' ? 'badge bg-danger' : 'badge bg-warning'}"
+                          th:text="${appointment.status}">Scheduled</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Client</p>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-2"
+                                     style="width: 30px; height: 30px;">
+                                    <span class="text-white" th:text="${#strings.substring(client.fullName, 0, 1)}">J</span>
+                                </div>
+                                <p class="fw-bold mb-0" th:text="${client.fullName}">John Doe</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Contact</p>
+                            <p class="mb-0">
+                                <a th:href="'mailto:' + ${client.email}" th:text="${client.email}">john.doe@example.com</a>
+                                <span th:if="${client.phoneNumber != null}"> | <a th:href="'tel:' + ${client.phoneNumber}" th:text="${client.phoneNumber}">+1 (555) 123-4567</a></span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Date</p>
+                            <p class="fw-bold mb-0" th:text="${#temporals.format(appointment.startTime, 'EEEE, MMMM dd, yyyy')}">Monday, May 10, 2025</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Time</p>
+                            <p class="fw-bold mb-0" th:text="${#temporals.format(appointment.startTime, 'hh:mm a') + ' - ' + #temporals.format(appointment.endTime, 'hh:mm a')}">10:00 AM - 11:00 AM</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Duration</p>
+                            <p class="fw-bold mb-0">60 minutes</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">Created</p>
+                            <p class="mb-0" th:text="${#temporals.format(appointment.createdAt, 'MMMM dd, yyyy')}">May 1, 2025</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <p class="text-muted mb-1">Client Notes</p>
+                            <p class="mb-0" th:text="${appointment.notes != null ? appointment.notes : 'No notes provided by client.'}">
+                                I'd like to discuss my recent anxiety attacks and the new coping mechanisms we talked about last time.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row mb-0">
+                        <div class="col-12">
+                            <p class="text-muted mb-1">Session Status</p>
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div th:if="${appointment.status.name() == 'SCHEDULED'}" class="progress-bar progress-bar-striped bg-primary" style="width: 25%">
+                                    Scheduled
+                                </div>
+                                <div th:if="${appointment.status.name() == 'COMPLETED'}" class="progress-bar bg-success" style="width: 100%">
+                                    Completed
+                                </div>
+                                <div th:if="${appointment.status.name() == 'CANCELLED'}" class="progress-bar bg-danger" style="width: 100%">
+                                    Cancelled
+                                </div>
+                                <div th:if="${appointment.status.name() == 'NO_SHOW'}" class="progress-bar bg-warning" style="width: 100%">
+                                    No Show
+                                </div>
+                            </div>
+                            <div th:if="${appointment.status.name() == 'SCHEDULED'}" class="text-center small text-muted">
+                                <span th:if="${#temporals.createNow().isBefore(appointment.startTime)}">
+                                    <span id="countdown"></span> until appointment
+                                </span>
+                                <span th:if="${#temporals.createNow().isAfter(appointment.startTime) && #temporals.createNow().isBefore(appointment.endTime)}">
+                                    Session in progress
+                                </span>
+                                <span th:if="${#temporals.createNow().isAfter(appointment.endTime)}">
+                                    Session time has passed
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a th:href="@{'/psychologist/messages?clientId=' + ${client.id}}" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-chat-dots me-1"></i>Message Client
+                            </a>
+                            <a th:href="@{'/psychologist/clients/' + ${client.id}}" class="btn btn-outline-secondary">
+                                <i class="bi bi-person-badge me-1"></i>View Client Profile
+                            </a>
+                        </div>
+                        <div th:if="${appointment.status.name() == 'SCHEDULED'}">
+                            <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#completeSessionModal">
+                                <i class="bi bi-check-circle me-1"></i>Complete Session
+                            </button>
+                            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelAppointmentModal">
+                                <i class="bi bi-x-circle me-1"></i>Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Session Notes</h5>
+                </div>
+                <div class="card-body">
+                    <form id="sessionNotesForm">
+                        <div class="mb-3">
+                            <label for="sessionNotes" class="form-label">Professional Notes</label>
+                            <textarea class="form-control" id="sessionNotes" rows="6" placeholder="Record your professional observations, diagnoses, treatment plans, and other notes from this session..."></textarea>
+                            <div class="form-text">These notes are private and will only be viewable by you.</div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="diagnosisCodes" class="form-label">Diagnosis Codes (Optional)</label>
+                                <input type="text" class="form-control" id="diagnosisCodes" placeholder="e.g., F41.1, F32.1">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="treatmentPlanUpdates" class="form-label">Treatment Plan Updates</label>
+                                <select class="form-select" id="treatmentPlanUpdates">
+                                    <option value="">No changes to treatment plan</option>
+                                    <option value="minor">Minor adjustments to existing plan</option>
+                                    <option value="significant">Significant changes - update plan</option>
+                                    <option value="new">Create new treatment plan</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="nextSteps" class="form-label">Next Steps</label>
+                                <textarea class="form-control" id="nextSteps" rows="3" placeholder="Action items for next session..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="clientProgress" class="form-label">Client Progress</label>
+                                <select class="form-select" id="clientProgress">
+                                    <option value="significant_improvement">Significant Improvement</option>
+                                    <option value="moderate_improvement">Moderate Improvement</option>
+                                    <option value="slight_improvement">Slight Improvement</option>
+                                    <option value="no_change" selected>No Change</option>
+                                    <option value="slight_decline">Slight Decline</option>
+                                    <option value="moderate_decline">Moderate Decline</option>
+                                    <option value="significant_decline">Significant Decline</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-white text-end">
+                    <button type="button" class="btn btn-primary" id="saveSessionNotes">
+                        <i class="bi bi-save me-1"></i>Save Notes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Client Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3"
+                             style="width: 60px; height: 60px;">
+                            <span class="text-white fs-4" th:text="${#strings.substring(client.fullName, 0, 1)}">J</span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0" th:text="${client.fullName}">John Doe</h5>
+                            <p class="text-muted mb-0" th:text="${client.email}">john.doe@example.com</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>Client Since</h6>
+                        <p class="mb-0" th:text="${#temporals.format(client.createdAt, 'MMMM dd, yyyy')}">January 15, 2023</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>Session History</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Total Sessions:</span>
+                            <span class="badge bg-primary" th:text="${totalSessions}">8</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span>Completed:</span>
+                            <span class="badge bg-success" th:text="${completedSessions}">6</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span>Cancelled:</span>
+                            <span class="badge bg-danger" th:text="${cancelledSessions}">1</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span>No-shows:</span>
+                            <span class="badge bg-warning" th:text="${noShowSessions}">0</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>Last Session</h6>
+                        <p class="mb-0" th:if="${lastSession != null}" th:text="${#temporals.format(lastSession.startTime, 'MMMM dd, yyyy')}">April 26, 2025</p>
+                        <p class="mb-0" th:if="${lastSession == null}">No completed sessions yet</p>
+                    </div>
+
+                    <div class="d-grid">
+                        <a th:href="@{'/psychologist/clients/' + ${client.id}}" class="btn btn-outline-primary">
+                            View Full Client History
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Recent Journal Entries</h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${recentJournals != null and !recentJournals.empty}" class="list-group list-group-flush">
+                        <a th:href="@{'/psychologist/journal/' + ${journal.id}}" th:each="journal : ${recentJournals}" 
+                           class="list-group-item list-group-item-action px-0 border-0">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1" th:text="${journal.title ?: 'Journal Entry'}">Journal Entry</h6>
+                                <small th:text="${#temporals.format(journal.createdAt, 'MMM d, yyyy')}">Date</small>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span th:if="${journal.moodRating != null}" th:class="'mood-rating mood-rating-' + ${journal.moodRating}">
+                                    <i class="bi bi-emoji-smile" th:if="${journal.moodRating >= 4}"></i>
+                                    <i class="bi bi-emoji-neutral" th:if="${journal.moodRating == 3}"></i>
+                                    <i class="bi bi-emoji-frown" th:if="${journal.moodRating < 3}"></i>
+                                </span>
+                                <small class="ms-2" th:text="${#strings.abbreviate(journal.content, 50)}">Journal content preview</small>
+                            </div>
+                        </a>
+                    </div>
+                    <div th:if="${recentJournals == null or recentJournals.empty}" class="text-center py-3">
+                        <p class="text-muted mb-0">No journal entries shared yet.</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-center">
+                    <a th:href="@{'/psychologist/journals?clientId=' + ${client.id}}" class="text-decoration-none">
+                        View All Journal Entries <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="completeSessionModal" tabindex="-1" aria-labelledby="completeSessionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="completeSessionModalLabel">Complete Session</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/api/appointments/{id}/status(id=${appointment.id})}" method="post">
+                    <input type="hidden" name="_method" value="PATCH">
+                    <input type="hidden" name="status" value="COMPLETED">
+                    <div class="modal-body">
+                        <p>Are you sure you want to mark this session as completed?</p>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="scheduleFollowUp" name="scheduleFollowUp">
+                            <label class="form-check-label" for="scheduleFollowUp">
+                                Schedule follow-up appointment
+                            </label>
+                        </div>
+
+                        <div id="followUpOptions" class="mb-3" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="followUpDate" class="form-label">Follow-up Date</label>
+                                    <input type="date" class="form-control" id="followUpDate" name="followUpDate">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="followUpTime" class="form-label">Time</label>
+                                    <input type="time" class="form-control" id="followUpTime" name="followUpTime">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="sendRecap" name="sendRecap" checked>
+                            <label class="form-check-label" for="sendRecap">
+                                Send session recap to client
+                            </label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="sessionSummary" class="form-label">Session Summary (for client)</label>
+                            <textarea class="form-control" id="sessionSummary" name="sessionSummary" rows="3" placeholder="Brief summary of what was discussed and any homework assignments..."></textarea>
+                            <div class="form-text">This summary will be included in the recap sent to the client.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Complete Session</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="cancelAppointmentModal" tabindex="-1" aria-labelledby="cancelAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelAppointmentModalLabel">Cancel Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/api/appointments/{id}/status(id=${appointment.id})}" method="post">
+                    <input type="hidden" name="_method" value="PATCH">
+                    <input type="hidden" name="status" value="CANCELLED">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            You are about to cancel the appointment with <strong th:text="${client.fullName}">John Doe</strong> on <strong th:text="${#temporals.format(appointment.startTime, 'MMMM dd, yyyy')}">May 10, 2025</strong>.
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cancellationReason" class="form-label">Reason for Cancellation</label>
+                            <select class="form-select" id="cancellationReason" name="cancellationReason" required>
+                                <option value="">Select a reason</option>
+                                <option value="schedule_conflict">Schedule Conflict</option>
+                                <option value="illness">Illness</option>
+                                <option value="emergency">Personal Emergency</option>
+                                <option value="rescheduling">Rescheduling to Different Time</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div id="otherReasonContainer" class="mb-3" style="display: none;">
+                            <label for="otherReason" class="form-label">Please Specify</label>
+                            <textarea class="form-control" id="otherReason" name="otherReason" rows="2"></textarea>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="notifyClient" name="notifyClient" checked>
+                            <label class="form-check-label" for="notifyClient">
+                                Notify client about cancellation
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="offerReschedule" name="offerReschedule" checked>
+                            <label class="form-check-label" for="offerReschedule">
+                                Offer to reschedule
+                            </label>
+                        </div>
+
+                        <div id="rescheduleOptionsContainer" class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rescheduleOption" id="clientInitiated" value="client_initiated" checked>
+                                <label class="form-check-label" for="clientInitiated">
+                                    Client should initiate rescheduling
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rescheduleOption" id="suggestTimes" value="suggest_times">
+                                <label class="form-check-label" for="suggestTimes">
+                                    Suggest alternative times
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="suggestedTimesContainer" class="mb-3" style="display: none;">
+                            <label class="form-label">Suggested Alternative Times</label>
+                            <div class="row mb-2">
+                                <div class="col-md-6">
+                                    <input type="date" class="form-control" name="suggestedDate1">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="time" class="form-control" name="suggestedTime1">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <input type="date" class="form-control" name="suggestedDate2">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="time" class="form-control" name="suggestedTime2">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-danger">Cancel Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const countdownElement = document.getElementById('countdown');
+            if (countdownElement) {
+                const appointmentDate = new Date('[[${appointment.startTime}]]');
+
+                const countdownInterval = setInterval(function() {
+                    const now = new Date();
+                    const distance = appointmentDate - now;
+
+                    if (distance < 0) {
+                        clearInterval(countdownInterval);
+                        countdownElement.textContent = 'Appointment time has passed';
+                        return;
+                    }
+
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    let countdownText = '';
+                    if (days > 0) countdownText += days + ' days ';
+                    if (hours > 0) countdownText += hours + ' hours ';
+                    if (minutes > 0) countdownText += minutes + ' minutes ';
+                    countdownText += seconds + ' seconds';
+
+                    countdownElement.textContent = countdownText;
+                }, 1000);
+            }
+
+            const scheduleFollowUp = document.getElementById('scheduleFollowUp');
+            const followUpOptions = document.getElementById('followUpOptions');
+
+            if (scheduleFollowUp && followUpOptions) {
+                scheduleFollowUp.addEventListener('change', function() {
+                    followUpOptions.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+
+            const cancellationReason = document.getElementById('cancellationReason');
+            const otherReasonContainer = document.getElementById('otherReasonContainer');
+
+            if (cancellationReason && otherReasonContainer) {
+                cancellationReason.addEventListener('change', function() {
+                    otherReasonContainer.style.display = this.value === 'other' ? 'block' : 'none';
+                });
+            }
+
+            const offerReschedule = document.getElementById('offerReschedule');
+            const rescheduleOptionsContainer = document.getElementById('rescheduleOptionsContainer');
+            const suggestTimes = document.getElementById('suggestTimes');
+            const suggestedTimesContainer = document.getElementById('suggestedTimesContainer');
+
+            if (offerReschedule && rescheduleOptionsContainer) {
+                offerReschedule.addEventListener('change', function() {
+                    rescheduleOptionsContainer.style.display = this.checked ? 'block' : 'none';
+                    if (!this.checked) {
+                        suggestedTimesContainer.style.display = 'none';
+                    } else if (suggestTimes.checked) {
+                        suggestedTimesContainer.style.display = 'block';
+                    }
+                });
+            }
+
+            if (suggestTimes && suggestedTimesContainer) {
+                suggestTimes.addEventListener('change', function() {
+                    suggestedTimesContainer.style.display = this.checked ? 'block' : 'none';
+                });
+
+                document.getElementById('clientInitiated').addEventListener('change', function() {
+                    suggestedTimesContainer.style.display = this.checked ? 'none' : 'block';
+                });
+            }
+
+            const saveSessionNotesBtn = document.getElementById('saveSessionNotes');
+            if (saveSessionNotesBtn) {
+                saveSessionNotesBtn.addEventListener('click', function() {
+                    const sessionNotes = document.getElementById('sessionNotes').value;
+                    const diagnosisCodes = document.getElementById('diagnosisCodes').value;
+                    const treatmentPlanUpdates = document.getElementById('treatmentPlanUpdates').value;
+                    const nextSteps = document.getElementById('nextSteps').value;
+                    const clientProgress = document.getElementById('clientProgress').value;
+
+                    console.log({
+                        sessionNotes,
+                        diagnosisCodes,
+                        treatmentPlanUpdates,
+                        nextSteps,
+                        clientProgress
+                    });
+
+                    alert('Session notes saved successfully!');
+                });
+            }
+        });
+    </script>
+</section>
+</body>
+</html>
