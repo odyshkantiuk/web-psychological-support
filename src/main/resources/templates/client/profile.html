@@ -288,18 +288,33 @@
 
                 confirmDeleteBtn.addEventListener('click', function() {
                     if (deleteConfirmation.value === 'DELETE') {
-                        const form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = '/api/users/' + document.querySelector('input[name="id"]').value;
+                        const userId = [[${user.id}]];
 
-                        const methodInput = document.createElement('input');
-                        methodInput.type = 'hidden';
-                        methodInput.name = '_method';
-                        methodInput.value = 'DELETE';
-
-                        form.appendChild(methodInput);
-                        document.body.appendChild(form);
-                        form.submit();
+                        fetch(`/api/users/${userId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''
+                            }
+                        })
+                            .then(response => {
+                                if (response.ok) {
+                                    return fetch('/logout', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/x-www-form-urlencoded',
+                                        }
+                                    });
+                                } else {
+                                    throw new Error('Failed to delete account');
+                                }
+                            })
+                            .then(logoutResponse => {
+                                window.location.href = '/login';
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('Failed to delete account. Please try again.');
+                            });
                     }
                 });
             }

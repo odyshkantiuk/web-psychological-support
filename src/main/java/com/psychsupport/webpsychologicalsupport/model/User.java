@@ -54,6 +54,18 @@ public class User {
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
     private Set<Appointment> clientAppointments = new HashSet<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private Set<Journal> journals = new HashSet<>();
+
+    @OneToMany(mappedBy = "sharedWithPsychologist", cascade = CascadeType.ALL)
+    private Set<Journal> sharedJournals = new HashSet<>();
+
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
+    private Set<Message> sentMessages = new HashSet<>();
+
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL)
+    private Set<Message> receivedMessages = new HashSet<>();
+
     @Column
     private String profilePicture;
 

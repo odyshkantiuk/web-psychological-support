@@ -147,8 +147,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form id="deleteUserForm" method="post">
+                    <form id="deleteUserForm" method="post" action="/admin/users">
                         <input type="hidden" name="_method" value="DELETE">
+                        <input type="hidden" name="userId" id="deleteUserId" value="">
                         <button type="submit" class="btn btn-danger">Delete User</button>
                     </form>
                 </div>
@@ -217,14 +218,37 @@
 
             function updatePagination(totalPages) {
                 const pagination = document.querySelector('.pagination');
+                if (!pagination) {
+                    const nav = document.createElement('nav');
+                    nav.setAttribute('aria-label', 'Page navigation');
+                    nav.className = 'mt-4';
+                    nav.style.display = totalPages <= 1 ? 'none' : 'block';
+                    
+                    const ul = document.createElement('ul');
+                    ul.className = 'pagination justify-content-center';
+                    nav.appendChild(ul);
+
+                    const cardBody = document.querySelector('.card .card-body');
+                    cardBody.appendChild(nav);
+                }
+                
+                const paginationElement = document.querySelector('.pagination');
+                if (!paginationElement) return;
+                
                 if (totalPages <= 1) {
-                    pagination.style.display = 'none';
+                    const navElement = paginationElement.closest('nav');
+                    if (navElement) {
+                        navElement.style.display = 'none';
+                    }
                     return;
                 }
 
-                pagination.style.display = 'flex';
-                const ul = pagination.querySelector('ul');
-                ul.innerHTML = '';
+                const navElement = paginationElement.closest('nav');
+                if (navElement) {
+                    navElement.style.display = 'block';
+                }
+                
+                paginationElement.innerHTML = '';
 
                 const prevLi = document.createElement('li');
                 prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
@@ -234,13 +258,13 @@
                         : `<a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>`
                     }
                 `;
-                ul.appendChild(prevLi);
+                paginationElement.appendChild(prevLi);
 
                 for (let i = 0; i < totalPages; i++) {
                     const li = document.createElement('li');
                     li.className = `page-item ${i === currentPage ? 'active' : ''}`;
                     li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i + 1}</a>`;
-                    ul.appendChild(li);
+                    paginationElement.appendChild(li);
                 }
 
                 const nextLi = document.createElement('li');
@@ -251,9 +275,9 @@
                         : `<a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>`
                     }
                 `;
-                ul.appendChild(nextLi);
+                paginationElement.appendChild(nextLi);
 
-                ul.querySelectorAll('a[data-page]').forEach(link => {
+                paginationElement.querySelectorAll('a[data-page]').forEach(link => {
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
                         currentPage = parseInt(e.target.dataset.page);
@@ -297,7 +321,7 @@
                     const userName = button.getAttribute('data-user-name');
 
                     document.getElementById('deleteUserName').textContent = userName;
-                    document.getElementById('deleteUserForm').action = `/admin/users/${userId}`;
+                    document.getElementById('deleteUserId').value = userId;
                 });
 
                 const deleteUserForm = document.getElementById('deleteUserForm');
@@ -305,13 +329,14 @@
                     deleteUserForm.addEventListener('submit', function(e) {
                         e.preventDefault();
                         const form = this;
+                        const formData = new FormData(form);
                         
                         fetch(form.action, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/x-www-form-urlencoded',
                             },
-                            body: new URLSearchParams(new FormData(form))
+                            body: new URLSearchParams(formData)
                         }).then(response => {
                             if (response.ok) {
                                 const modal = bootstrap.Modal.getInstance(deleteUserModal);

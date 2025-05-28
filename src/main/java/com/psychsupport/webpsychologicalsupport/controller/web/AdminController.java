@@ -201,8 +201,10 @@ public class AdminController {
             updateDto.setPhoneNumber(userDto.getPhoneNumber());
             updateDto.setBio(userDto.getBio());
             updateDto.setProfilePicture(userDto.getProfilePicture());
+            updateDto.setRole(userDto.getRole());
+            updateDto.setIsVerified(userDto.getVerified());
 
-            userService.updateUser(id, updateDto);
+            userService.updateUserAsAdmin(id, updateDto);
             return "redirect:/admin/users/view/" + id + "?success";
         } catch (Exception e) {
             User admin = userService.getUserByUsername(principal.getName());
@@ -253,6 +255,11 @@ public class AdminController {
         model.addAttribute("pageSize", size);
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("currentSort", sort);
+
+        List<UserDto> psychologists = userService.getPsychologists().stream()
+                .map(UserDto::fromUser)
+                .collect(Collectors.toList());
+        model.addAttribute("psychologists", psychologists);
 
         return "admin/appointments";
     }
@@ -609,16 +616,82 @@ public class AdminController {
         return "redirect:/admin/profile";
     }
 
-    @DeleteMapping("/users/{id}")
-    public String deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return "redirect:/admin/users?deleted";
+    @PostMapping("/users/{id}/photo")
+    public String uploadUserPhoto(@PathVariable Long id,
+                                @RequestParam("profilePhoto") MultipartFile file,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            if (file.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Please select a file to upload.");
+                return "redirect:/admin/users/edit/" + id;
+            }
+
+            if (!file.getContentType().startsWith("image/")) {
+                redirectAttributes.addFlashAttribute("error", "Please upload an image file.");
+                return "redirect:/admin/users/edit/" + id;
+            }
+
+            if (file.getSize() > 5 * 1024 * 1024) {
+                redirectAttributes.addFlashAttribute("error", "File size should not exceed 5MB.");
+                return "redirect:/admin/users/edit/" + id;
+            }
+
+            User user = userService.getUserById(id);
+            String fileName = "profile_" + user.getId() + "_" + System.currentTimeMillis() + 
+                            file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+
+            String uploadDir = "uploads/profile-photos";
+            File dir = new File(uploadDir);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+
+            File destFile = new File(dir.getAbsolutePath() + File.separator + fileName);
+            file.transferTo(destFile);
+
+            UserUpdateDto updateDto = new UserUpdateDto();
+            updateDto.setProfilePicture("/uploads/profile-photos/" + fileName);
+            userService.updateUserAsAdmin(id, updateDto);
+
+            redirectAttributes.addFlashAttribute("success", "Profile photo uploaded successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Failed to upload profile photo: " + e.getMessage());
+        }
+        return "redirect:/admin/users/edit/" + id;
+    }
+
+    @PostMapping("/users/{id}")
+    public String deleteUser(@PathVariable Long id, @RequestParam(name = "_method", required = false) String method) {
+        if ("DELETE".equals(method)) {
+            userService.deleteUser(id);
+            return "redirect:/admin/users?deleted";
+        }
+        return "redirect:/admin/users";
+    }
+
+    @PostMapping("/users")
+    public String deleteUserFallback(@RequestParam(name = "userId", required = false) Long userId, 
+                                   @RequestParam(name = "_method", required = false) String method) {
+        if ("DELETE".equals(method) && userId != null) {
+            userService.deleteUser(userId);
+            return "redirect:/admin/users?deleted";
+        }
+        return "redirect:/admin/users";
     }
 
     @PostMapping("/psychologists/{id}/verify")
     public String verifyPsychologist(@PathVariable Long id, @RequestParam String verificationNotes) {
         userService.verifyPsychologist(id, verificationNotes);
         return "redirect:/admin/psychologists?verified";
+    }
+
+    @PostMapping("/psychologists/{id}")
+    public String deletePsychologist(@PathVariable Long id, @RequestParam(name = "_method", required = false) String method) {
+        if ("DELETE".equals(method)) {
+            userService.deleteUser(id);
+            return "redirect:/admin/psychologists?deleted";
+        }
+        return "redirect:/admin/psychologists";
     }
 
     @PostMapping("/appointments/{id}/cancel")
@@ -631,6 +704,13 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Failed to cancel appointment: " + e.getMessage());
         }
-        return "redirect:/admin/appointments";
+        return "redirect:/admin/appointments/" + id;
+    }
+
+    @GetMapping("/encryption-test")
+    public String encryptionTest(Model model, Principal principal) {
+        User user = userService.getUserByUsername(principal.getName());
+        model.addAttribute("user", UserDto.fromUser(user));
+        return "admin/encryption-test";
     }
 }

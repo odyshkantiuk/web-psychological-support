@@ -78,13 +78,13 @@ public class ClientController {
             model.addAttribute("journalEntries", 0);
             model.addAttribute("unreadMessages", 0);
         }
-    
+
         return "client/dashboard";
     }
 
     @GetMapping("/psychologists")
-    public String viewPsychologists(Model model, Principal principal, 
-                                   @RequestParam(required = false, defaultValue = "false") boolean showOnlyAvailable) {
+    public String viewPsychologists(Model model, Principal principal,
+                                    @RequestParam(required = false, defaultValue = "false") boolean showOnlyAvailable) {
         User user = userService.getUserByUsername(principal.getName());
         model.addAttribute("user", UserDto.fromUser(user));
 
@@ -96,19 +96,42 @@ public class ClientController {
 
         Map<Long, Boolean> availabilityMap = new HashMap<>();
         for (UserDto psychologist : psychologists) {
-            List<TimeSlotDto> availableSlots = availabilityService.getAvailableTimeSlots(
-                psychologist.getId(), now.toLocalDate());
-            boolean isAvailable = availableSlots.stream()
-                .anyMatch(slot -> !slot.getStartTime().isBefore(now));
-            availabilityMap.put(psychologist.getId(), isAvailable);
+            boolean isCurrentlyAvailable = false;
+
+            List<AppointmentDto> currentAppointments = appointmentService.getPsychologistAppointments(psychologist.getId())
+                    .stream()
+                    .filter(apt -> apt.getStatus() == Appointment.Status.SCHEDULED)
+                    .filter(apt -> !apt.getStartTime().isAfter(now) && !apt.getEndTime().isBefore(now))
+                    .toList();
+
+            if (!currentAppointments.isEmpty()) {
+                availabilityMap.put(psychologist.getId(), false);
+                continue;
+            }
+
+            LocalDateTime nearFuture = now.plusHours(2);
+            List<TimeSlotDto> nearFutureSlots = availabilityService.getAvailableTimeSlots(
+                    psychologist.getId(), now.toLocalDate());
+
+            isCurrentlyAvailable = nearFutureSlots.stream()
+                    .anyMatch(slot -> slot.getStartTime().isAfter(now.plusMinutes(15)) && 
+                                    slot.getStartTime().isBefore(nearFuture));
+
+            if (!isCurrentlyAvailable) {
+                List<TimeSlotDto> tomorrowSlots = availabilityService.getAvailableTimeSlots(
+                        psychologist.getId(), now.toLocalDate().plusDays(1));
+                isCurrentlyAvailable = !tomorrowSlots.isEmpty();
+            }
+            
+            availabilityMap.put(psychologist.getId(), isCurrentlyAvailable);
         }
         model.addAttribute("availabilityMap", availabilityMap);
 
         if (showOnlyAvailable) {
             List<UserDto> availablePsychologists = psychologists.stream()
-                .filter(psychologist -> availabilityMap.get(psychologist.getId()))
-                .toList();
-            
+                    .filter(psychologist -> availabilityMap.get(psychologist.getId()))
+                    .toList();
+
             model.addAttribute("psychologists", availablePsychologists);
             model.addAttribute("showingAvailable", true);
         } else {
@@ -116,21 +139,21 @@ public class ClientController {
             model.addAttribute("showingAvailable", false);
         }
 
-        String psychologistId = model.asMap().get("selectedPsychologistId") != null 
-            ? model.asMap().get("selectedPsychologistId").toString() 
-            : null;
+        String psychologistId = model.asMap().get("selectedPsychologistId") != null
+                ? model.asMap().get("selectedPsychologistId").toString()
+                : null;
         model.addAttribute("selectedPsychologistId", psychologistId);
 
         return "client/psychologists";
     }
 
     @GetMapping("/appointments")
-    public String appointmentsPage(Model model, Principal principal, 
-                                  @RequestParam(required = false) Long psychologistId,
-                                  @RequestParam(required = false) String status,
-                                  @RequestParam(required = false) String dateFrom,
-                                  @RequestParam(required = false) String dateTo,
-                                  @RequestParam(required = false) String view) {
+    public String appointmentsPage(Model model, Principal principal,
+                                   @RequestParam(required = false) Long psychologistId,
+                                   @RequestParam(required = false) String status,
+                                   @RequestParam(required = false) String dateFrom,
+                                   @RequestParam(required = false) String dateTo,
+                                   @RequestParam(required = false) String view) {
         User user = userService.getUserByUsername(principal.getName());
         model.addAttribute("user", UserDto.fromUser(user));
 
@@ -140,14 +163,14 @@ public class ClientController {
 
         if (status != null && !status.isEmpty()) {
             filteredAppointments = filteredAppointments.stream()
-                .filter(apt -> apt.getStatus().name().equals(status))
-                .collect(Collectors.toList());
+                    .filter(apt -> apt.getStatus().name().equals(status))
+                    .collect(Collectors.toList());
         }
 
         if (psychologistId != null) {
             filteredAppointments = filteredAppointments.stream()
-                .filter(apt -> apt.getPsychologistId().equals(psychologistId))
-                .collect(Collectors.toList());
+                    .filter(apt -> apt.getPsychologistId().equals(psychologistId))
+                    .collect(Collectors.toList());
 
             model.addAttribute("selectedPsychologistId", psychologistId);
         }
@@ -155,35 +178,35 @@ public class ClientController {
         if (dateFrom != null && !dateFrom.isEmpty()) {
             LocalDate fromDate = LocalDate.parse(dateFrom);
             filteredAppointments = filteredAppointments.stream()
-                .filter(apt -> !apt.getStartTime().toLocalDate().isBefore(fromDate))
-                .collect(Collectors.toList());
-            
+                    .filter(apt -> !apt.getStartTime().toLocalDate().isBefore(fromDate))
+                    .collect(Collectors.toList());
+
             model.addAttribute("selectedDateFrom", dateFrom);
         }
-        
+
         if (dateTo != null && !dateTo.isEmpty()) {
             LocalDate toDate = LocalDate.parse(dateTo);
             filteredAppointments = filteredAppointments.stream()
-                .filter(apt -> !apt.getStartTime().toLocalDate().isAfter(toDate))
-                .collect(Collectors.toList());
-            
+                    .filter(apt -> !apt.getStartTime().toLocalDate().isAfter(toDate))
+                    .collect(Collectors.toList());
+
             model.addAttribute("selectedDateTo", dateTo);
         }
 
         if (view != null) {
             LocalDate today = LocalDate.now();
-            
+
             if ("upcoming".equals(view)) {
                 filteredAppointments = filteredAppointments.stream()
-                    .filter(apt -> !apt.getStartTime().toLocalDate().isBefore(today) 
-                                  && apt.getStatus().name().equals("SCHEDULED"))
-                    .collect(Collectors.toList());
+                        .filter(apt -> !apt.getStartTime().toLocalDate().isBefore(today)
+                                && apt.getStatus().name().equals("SCHEDULED"))
+                        .collect(Collectors.toList());
                 model.addAttribute("activeView", "upcoming");
             } else if ("past".equals(view)) {
                 filteredAppointments = filteredAppointments.stream()
-                    .filter(apt -> apt.getStartTime().toLocalDate().isBefore(today) 
-                                 || !apt.getStatus().name().equals("SCHEDULED"))
-                    .collect(Collectors.toList());
+                        .filter(apt -> apt.getStartTime().toLocalDate().isBefore(today)
+                                || !apt.getStatus().name().equals("SCHEDULED"))
+                        .collect(Collectors.toList());
                 model.addAttribute("activeView", "past");
             } else {
                 model.addAttribute("activeView", "all");
@@ -191,7 +214,7 @@ public class ClientController {
         } else {
             model.addAttribute("activeView", "all");
         }
-        
+
         model.addAttribute("appointments", filteredAppointments);
         model.addAttribute("psychologists", userService.getVerifiedPsychologists());
 
@@ -203,7 +226,7 @@ public class ClientController {
             model.addAttribute("selectedPsychologistId", psychologistId);
             model.addAttribute("openAppointmentModal", true);
         }
-        
+
         return "client/appointments-fixed";
     }
 
@@ -211,36 +234,36 @@ public class ClientController {
     public String viewAppointment(@PathVariable Long id, Model model, Principal principal) {
         User user = userService.getUserByUsername(principal.getName());
         model.addAttribute("user", UserDto.fromUser(user));
-        
+
         AppointmentDto appointment = appointmentService.getAppointmentById(id);
         if (!appointment.getClientId().equals(user.getId())) {
             throw new AccessDeniedException("You don't have permission to view this appointment");
         }
-        
+
         model.addAttribute("appointment", appointment);
         return "client/view-appointment";
     }
-    
+
     @GetMapping("/appointments/cancel")
-    public String cancelAppointment(@RequestParam Long id, 
-                                   @RequestParam Long psychologistId,
-                                   RedirectAttributes redirectAttributes,
-                                   Principal principal) {
+    public String cancelAppointment(@RequestParam Long id,
+                                    @RequestParam(required = false) Long psychologistId,
+                                    RedirectAttributes redirectAttributes,
+                                    Principal principal) {
         try {
             User user = userService.getUserByUsername(principal.getName());
             AppointmentDto appointment = appointmentService.getAppointmentById(id);
-            
+
             if (!appointment.getClientId().equals(user.getId())) {
                 throw new AccessDeniedException("You don't have permission to cancel this appointment");
             }
 
             appointmentService.updateAppointmentStatus(id, Appointment.Status.CANCELLED, "Cancelled by client");
-            
+
             redirectAttributes.addFlashAttribute("success", "Appointment cancelled successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Failed to cancel appointment: " + e.getMessage());
         }
-        
+
         return "redirect:/client/appointments";
     }
 
@@ -348,23 +371,23 @@ public class ClientController {
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("completedSessions", completedSessions);
         model.addAttribute("journalEntries", journalEntries);
-        
+
         return "client/profile";
     }
 
     @PostMapping("/profile")
-    public String updateProfile(@ModelAttribute("user") UserDto userDto, 
-                              Principal principal,
-                              RedirectAttributes redirectAttributes) {
+    public String updateProfile(@ModelAttribute("user") UserDto userDto,
+                                Principal principal,
+                                RedirectAttributes redirectAttributes) {
         try {
             User client = userService.getUserByUsername(principal.getName());
-            
+
             UserUpdateDto updateDto = new UserUpdateDto();
             updateDto.setFullName(userDto.getFullName());
             updateDto.setEmail(userDto.getEmail());
             updateDto.setPhoneNumber(userDto.getPhoneNumber());
             updateDto.setBio(userDto.getBio());
-            
+
             userService.updateUser(client.getId(), updateDto);
             redirectAttributes.addFlashAttribute("success", "Profile updated successfully.");
         } catch (Exception e) {
@@ -375,10 +398,10 @@ public class ClientController {
 
     @PostMapping("/profile/password")
     public String changePassword(@RequestParam String currentPassword,
-                               @RequestParam String newPassword,
-                               @RequestParam String confirmPassword,
-                               Principal principal,
-                               RedirectAttributes redirectAttributes) {
+                                 @RequestParam String newPassword,
+                                 @RequestParam String confirmPassword,
+                                 Principal principal,
+                                 RedirectAttributes redirectAttributes) {
         try {
             if (!newPassword.equals(confirmPassword)) {
                 redirectAttributes.addFlashAttribute("error", "New password and confirm password do not match.");
@@ -396,8 +419,8 @@ public class ClientController {
 
     @PostMapping("/profile/photo")
     public String uploadProfilePhoto(@RequestParam("profilePhoto") MultipartFile file,
-                                   Principal principal,
-                                   RedirectAttributes redirectAttributes) {
+                                     Principal principal,
+                                     RedirectAttributes redirectAttributes) {
         try {
             if (file.isEmpty()) {
                 redirectAttributes.addFlashAttribute("error", "Please select a file to upload.");
@@ -415,8 +438,8 @@ public class ClientController {
             }
 
             User client = userService.getUserByUsername(principal.getName());
-            String fileName = "profile_" + client.getId() + "_" + System.currentTimeMillis() + 
-                            file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+            String fileName = "profile_" + client.getId() + "_" + System.currentTimeMillis() +
+                    file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
 
             String uploadDir = "uploads/profile-photos";
             File dir = new File(uploadDir);
@@ -446,7 +469,7 @@ public class ClientController {
             @RequestParam String endTime,
             @RequestParam(required = false) String notes,
             RedirectAttributes redirectAttributes) {
-        
+
         try {
             AppointmentDto appointmentDto = new AppointmentDto();
             appointmentDto.setClientId(clientId);
@@ -454,13 +477,13 @@ public class ClientController {
             appointmentDto.setStartTime(LocalDateTime.parse(startTime));
             appointmentDto.setEndTime(LocalDateTime.parse(endTime));
             appointmentDto.setNotes(notes);
-            
+
             appointmentService.createAppointment(appointmentDto);
             redirectAttributes.addFlashAttribute("success", "Appointment scheduled successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Failed to schedule appointment: " + e.getMessage());
         }
-        
+
         return "redirect:/client/appointments";
     }
 }

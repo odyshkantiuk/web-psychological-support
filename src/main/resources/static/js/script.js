@@ -162,9 +162,21 @@ function initializeChat() {
 
             stompClient.subscribe('/user/' + userId + '/queue/messages', function(message) {
                 console.log('Received personal message:', message.body);
-                showMessage(JSON.parse(message.body));
+                const receivedMessage = JSON.parse(message.body);
 
-                checkAndUpdateStatusBasedOnAppointment();
+                window.messageEncryption.decryptFromTransmission(receivedMessage)
+                    .then(decryptedMessage => {
+                        showMessage(decryptedMessage);
+                        checkAndUpdateStatusBasedOnAppointment();
+                    })
+                    .catch(error => {
+                        console.error('Error decrypting received message:', error);
+                        showMessage({
+                            ...receivedMessage,
+                            content: '[Message could not be decrypted]'
+                        });
+                        checkAndUpdateStatusBasedOnAppointment();
+                    });
             });
 
             stompClient.subscribe('/user/' + userId + '/queue/notifications', function(notification) {
@@ -203,22 +215,32 @@ function initializeChat() {
 
     function sendMessage() {
         if (stompClient && messageInput.value.trim() !== '') {
+            const plainContent = messageInput.value.trim();
+
             const chatMessage = {
                 type: 'CHAT',
                 senderId: userId,
                 senderName: document.getElementById('currentUserName').value,
                 receiverId: receiverId,
                 receiverName: document.getElementById('receiverName').value,
-                content: messageInput.value.trim(),
+                content: plainContent,
                 timestamp: new Date()
             };
 
-            console.log('Sending message:', chatMessage);
-            stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(chatMessage));
+            window.messageEncryption.encryptForTransmission(chatMessage)
+                .then(encryptedMessage => {
+                    console.log('Sending encrypted message:', encryptedMessage);
+                    stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(encryptedMessage));
 
-            showMessage(chatMessage, true);
-
-            messageInput.value = '';
+                    showMessage(chatMessage, true);
+                    messageInput.value = '';
+                })
+                .catch(error => {
+                    console.error('Error encrypting message:', error);
+                    stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(chatMessage));
+                    showMessage(chatMessage, true);
+                    messageInput.value = '';
+                });
         }
     }
 
@@ -315,18 +337,7 @@ function initializeChat() {
                     noMessagesElement.innerHTML = '<p class="text-muted">No messages yet. Start the conversation!</p>';
                     chatContainer.appendChild(noMessagesElement);
                 } else {
-                    messages.forEach(message => {
-                        const chatMessage = {
-                            senderId: message.senderId,
-                            senderName: message.senderName,
-                            receiverId: message.receiverId,
-                            receiverName: message.receiverName,
-                            content: message.content,
-                            timestamp: message.sentAt
-                        };
-
-                        showMessage(chatMessage);
-                    });
+                    processMessagesSequentially(messages, 0);
                 }
 
                 markConversationAsRead();
@@ -341,6 +352,50 @@ function initializeChat() {
                     </div>
                 `;
             });
+    }
+
+    function processMessagesSequentially(messages, index) {
+        if (index >= messages.length) {
+            return;
+        }
+
+        const message = messages[index];
+        const messageData = {
+            senderId: message.senderId,
+            senderName: message.senderName,
+            receiverId: message.receiverId,
+            receiverName: message.receiverName,
+            content: message.content,
+            timestamp: message.sentAt,
+            encrypted: message.encrypted,
+            encryptionIv: message.encryptionIv,
+            encryptionHmac: message.encryptionHmac
+        };
+
+        if (message.encrypted) {
+            const encryptedData = {
+                content: message.content,
+                iv: message.encryptionIv,
+                hmac: message.encryptionHmac,
+                encrypted: true
+            };
+
+            window.messageEncryption.decryptMessage(encryptedData, message.senderId, message.receiverId)
+                .then(decryptedContent => {
+                    messageData.content = decryptedContent;
+                    showMessage(messageData);
+                    processMessagesSequentially(messages, index + 1);
+                })
+                .catch(error => {
+                    console.error('Error decrypting message:', error);
+                    messageData.content = '[Message could not be decrypted]';
+                    showMessage(messageData);
+                    processMessagesSequentially(messages, index + 1);
+                });
+        } else {
+            showMessage(messageData);
+            processMessagesSequentially(messages, index + 1);
+        }
     }
 
     function markConversationAsRead() {
@@ -596,9 +651,21 @@ function initializePsychologistChat() {
 
             stompClient.subscribe('/user/' + userId + '/queue/messages', function(message) {
                 console.log('Psychologist received private message:', message.body);
-                showMessage(JSON.parse(message.body));
+                const receivedMessage = JSON.parse(message.body);
 
-                checkAndUpdateStatusBasedOnAppointment();
+                window.messageEncryption.decryptFromTransmission(receivedMessage)
+                    .then(decryptedMessage => {
+                        showMessage(decryptedMessage);
+                        checkAndUpdateStatusBasedOnAppointment();
+                    })
+                    .catch(error => {
+                        console.error('Error decrypting received message:', error);
+                        showMessage({
+                            ...receivedMessage,
+                            content: '[Message could not be decrypted]'
+                        });
+                        checkAndUpdateStatusBasedOnAppointment();
+                    });
             });
 
             stompClient.subscribe('/user/' + userId + '/queue/notifications', function(notification) {
@@ -637,22 +704,32 @@ function initializePsychologistChat() {
 
     function sendMessage() {
         if (stompClient && messageInput.value.trim() !== '') {
+            const plainContent = messageInput.value.trim();
+            
             const chatMessage = {
                 type: 'CHAT',
                 senderId: userId,
                 senderName: document.getElementById('currentUserName').value,
                 receiverId: receiverId,
                 receiverName: document.getElementById('receiverName') ? document.getElementById('receiverName').value : 'Client',
-                content: messageInput.value.trim(),
+                content: plainContent,
                 timestamp: new Date()
             };
 
-            console.log('Psychologist sending message:', chatMessage);
-            stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(chatMessage));
+            window.messageEncryption.encryptForTransmission(chatMessage)
+                .then(encryptedMessage => {
+                    console.log('Psychologist sending encrypted message:', encryptedMessage);
+                    stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(encryptedMessage));
 
-            showMessage(chatMessage, true);
-
-            messageInput.value = '';
+                    showMessage(chatMessage, true);
+                    messageInput.value = '';
+                })
+                .catch(error => {
+                    console.error('Error encrypting psychologist message:', error);
+                    stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(chatMessage));
+                    showMessage(chatMessage, true);
+                    messageInput.value = '';
+                });
         }
     }
 
@@ -772,18 +849,7 @@ function initializePsychologistChat() {
                         noMessagesElement.innerHTML = '<p class="text-muted">No messages yet. Start the conversation!</p>';
                         chatContainer.appendChild(noMessagesElement);
                     } else {
-                        messages.forEach(message => {
-                            const chatMessage = {
-                                senderId: message.senderId,
-                                senderName: message.senderName,
-                                receiverId: message.receiverId,
-                                receiverName: message.receiverName,
-                                content: message.content,
-                                timestamp: message.sentAt
-                            };
-
-                            showMessage(chatMessage);
-                        });
+                        processPsychologistMessagesSequentially(messages, 0);
                     }
 
                     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -809,6 +875,50 @@ function initializePsychologistChat() {
                     chatContainer.innerHTML = '<div class="alert alert-danger m-3">Error loading messages. Please try refreshing the page.</div>';
                 }
             });
+    }
+
+    function processPsychologistMessagesSequentially(messages, index) {
+        if (index >= messages.length) {
+            return;
+        }
+
+        const message = messages[index];
+        const messageData = {
+            senderId: message.senderId,
+            senderName: message.senderName,
+            receiverId: message.receiverId,
+            receiverName: message.receiverName,
+            content: message.content,
+            timestamp: message.sentAt,
+            encrypted: message.encrypted,
+            encryptionIv: message.encryptionIv,
+            encryptionHmac: message.encryptionHmac
+        };
+
+        if (message.encrypted) {
+            const encryptedData = {
+                content: message.content,
+                iv: message.encryptionIv,
+                hmac: message.encryptionHmac,
+                encrypted: true
+            };
+
+            window.messageEncryption.decryptMessage(encryptedData, message.senderId, message.receiverId)
+                .then(decryptedContent => {
+                    messageData.content = decryptedContent;
+                    showMessage(messageData);
+                    processPsychologistMessagesSequentially(messages, index + 1);
+                })
+                .catch(error => {
+                    console.error('Error decrypting message:', error);
+                    messageData.content = '[Message could not be decrypted]';
+                    showMessage(messageData);
+                    processPsychologistMessagesSequentially(messages, index + 1);
+                });
+        } else {
+            showMessage(messageData);
+            processPsychologistMessagesSequentially(messages, index + 1);
+        }
     }
 
     function markConversationAsRead() {

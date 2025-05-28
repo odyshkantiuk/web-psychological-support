@@ -472,6 +472,7 @@
                 <form id="completeAppointmentForm">
                     <div class="modal-body">
                         <input type="hidden" id="completeAppointmentId" name="id">
+                        <input type="hidden" id="completePsychologistId" th:value="${user.id}">
                         <input type="hidden" id="completeClientId" name="clientId">
 
                         <p>Mark this appointment as completed?</p>
@@ -546,6 +547,7 @@
                 <form id="cancelAppointmentForm">
                     <div class="modal-body">
                         <input type="hidden" id="cancelAppointmentId" name="id">
+                        <input type="hidden" id="cancelPsychologistId" th:value="${user.id}">
                         <input type="hidden" id="cancelClientId" name="clientId">
 
                         <p>Are you sure you want to cancel this appointment? This action cannot be undone.</p>

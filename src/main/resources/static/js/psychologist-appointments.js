@@ -212,6 +212,7 @@ function initializeModalForms() {
             e.preventDefault();
 
             const appointmentId = document.getElementById('cancelAppointmentId').value;
+            const psychologistId = document.getElementById('cancelPsychologistId').value;
             const cancelReason = document.getElementById('cancelReason').value;
             const clientId = document.getElementById('cancelClientId')?.value || '';
 
@@ -220,7 +221,7 @@ function initializeModalForms() {
                 return;
             }
 
-            let url = `/api/appointments/${appointmentId}/status?status=CANCELLED`;
+            let url = `/api/appointments/${appointmentId}/status?status=CANCELLED&psychologistId=${psychologistId}`;
             if (clientId) {
                 url += `&clientId=${clientId}`;
             }
@@ -264,6 +265,7 @@ function initializeModalForms() {
             e.preventDefault();
 
             const appointmentId = document.getElementById('completeAppointmentId').value;
+            const psychologistId = document.getElementById('completePsychologistId').value;
             const sessionNotes = document.getElementById('sessionNotes').value || '';
             const clientId = document.getElementById('completeClientId')?.value || '';
 
@@ -272,7 +274,7 @@ function initializeModalForms() {
                 return;
             }
 
-            let url = `/api/appointments/${appointmentId}/status?status=COMPLETED`;
+            let url = `/api/appointments/${appointmentId}/status?status=COMPLETED&psychologistId=${psychologistId}`;
             if (clientId) {
                 url += `&clientId=${clientId}`;
             }

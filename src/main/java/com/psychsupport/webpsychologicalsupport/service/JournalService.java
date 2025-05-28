@@ -36,6 +36,14 @@ public class JournalService {
             journal.setSharedWithPsychologist(psychologist);
         }
 
+        if (journalDto.getEncrypted() != null && journalDto.getEncrypted()) {
+            journal.setEncrypted(true);
+            journal.setEncryptionIv(journalDto.getEncryptionIv());
+            journal.setEncryptionHmac(journalDto.getEncryptionHmac());
+        } else {
+            journal.setEncrypted(false);
+        }
+
         Journal savedJournal = journalRepository.save(journal);
         return convertToDto(savedJournal);
     }
@@ -80,6 +88,16 @@ public class JournalService {
             journal.setMoodRating(journalDto.getMoodRating());
         }
 
+        if (journalDto.getEncrypted() != null && journalDto.getEncrypted()) {
+            journal.setEncrypted(true);
+            journal.setEncryptionIv(journalDto.getEncryptionIv());
+            journal.setEncryptionHmac(journalDto.getEncryptionHmac());
+        } else if (journalDto.getEncrypted() != null && !journalDto.getEncrypted()) {
+            journal.setEncrypted(false);
+            journal.setEncryptionIv(null);
+            journal.setEncryptionHmac(null);
+        }
+
         if (journalDto.getSharedWithPsychologistId() != null) {
             User psychologist = userService.getUserById(journalDto.getSharedWithPsychologistId());
             if (psychologist.getRole() != User.Role.PSYCHOLOGIST) {
@@ -110,6 +128,9 @@ public class JournalService {
         dto.setCreatedAt(journal.getCreatedAt());
         dto.setUpdatedAt(journal.getUpdatedAt());
         dto.setMoodRating(journal.getMoodRating());
+        dto.setEncrypted(journal.getEncrypted() != null ? journal.getEncrypted() : false);
+        dto.setEncryptionIv(journal.getEncryptionIv());
+        dto.setEncryptionHmac(journal.getEncryptionHmac());
 
         if (journal.getSharedWithPsychologist() != null) {
             dto.setSharedWithPsychologistId(journal.getSharedWithPsychologist().getId());

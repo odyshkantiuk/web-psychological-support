@@ -3,6 +3,7 @@ package com.psychsupport.webpsychologicalsupport.repository;
 import com.psychsupport.webpsychologicalsupport.model.Appointment;
 import com.psychsupport.webpsychologicalsupport.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -40,4 +41,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("psychologistId") Long psychologistId,
             @Param("excludedClientId") Long excludedClientId,
             @Param("currentTime") LocalDateTime currentTime);
+    
+    @Modifying
+    @Query("DELETE FROM Appointment a WHERE a.psychologist.id = :userId OR a.client.id = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }

@@ -56,7 +56,8 @@
                                         class="btn btn-danger"
                                         data-bs-toggle="modal"
                                         data-bs-target="#cancelAppointmentModal"
-                                        th:data-appointment-id="${appointment.id}">
+                                        th:data-appointment-id="${appointment.id}"
+                                        th:data-psychologist-id="${appointment.psychologistId}">
                                     <i class="bi bi-x-circle me-2"></i>Cancel Appointment
                                 </button>
                             </div>
@@ -79,10 +80,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep It</button>
-                    <form id="cancelAppointmentForm" th:action="@{/api/appointments}" method="post">
-                        <input type="hidden" name="_method" value="PATCH">
-                        <input type="hidden" id="cancelAppointmentId" name="id">
-                        <input type="hidden" name="status" value="CANCELLED">
+                    <form id="cancelAppointmentForm" method="get" th:action="@{/client/appointments/cancel}">
+                        <input type="hidden" id="cancelAppointmentId" name="id" th:value="${appointment.id}">
+                        <input type="hidden" id="cancelPsychologistId" name="psychologistId" th:value="${appointment.psychologistId}">
                         <button type="submit" class="btn btn-danger">Yes, Cancel Appointment</button>
                     </form>
                 </div>
@@ -98,7 +98,22 @@
             cancelAppointmentModal.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
                 const appointmentId = button.getAttribute('data-appointment-id');
-                document.getElementById('cancelAppointmentId').value = appointmentId;
+                const psychologistId = button.getAttribute('data-psychologist-id');
+                
+                console.log('Button:', button);
+                console.log('Appointment ID from button:', appointmentId);
+                console.log('Psychologist ID from button:', psychologistId);
+
+                if (appointmentId) {
+                    document.getElementById('cancelAppointmentId').value = appointmentId;
+                }
+                if (psychologistId) {
+                    document.getElementById('cancelPsychologistId').value = psychologistId;
+                }
+
+                console.log('Final form values:');
+                console.log('- ID:', document.getElementById('cancelAppointmentId').value);
+                console.log('- Psychologist ID:', document.getElementById('cancelPsychologistId').value);
             });
         }
     });

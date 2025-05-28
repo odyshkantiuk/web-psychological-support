@@ -46,7 +46,6 @@
                                     <span class="badge bg-danger rounded-pill d-none unread-badge">0</span>
                                 </div>
                                 <small th:text="${psychologist.email}" class="text-muted">email@example.com</small>
-                                <small class="message-preview text-muted d-none"></small>
                             </div>
                         </a>
                     </div>
@@ -75,6 +74,9 @@
                         <small class="text-muted">Psychologist</small>
                         <div id="connection-status-container" class="d-flex align-items-center">
                             <span id="connection-status" class="ms-2 badge bg-secondary">Connecting...</span>
+                            <span id="encryption-status" class="ms-2 badge bg-success">
+                                <i class="bi bi-shield-lock"></i> Encrypted
+                            </span>
                         </div>
                     </div>
                     <div>
@@ -136,8 +138,6 @@
             }
 
             updateAllUnreadCounts();
-
-            updateMessagePreviews();
         });
 
         function updateAllUnreadCounts() {
@@ -165,42 +165,6 @@
                     }
                 })
                 .catch(error => console.error('Error getting unread count:', error));
-        }
-
-        function updateMessagePreviews() {
-            const userId = document.getElementById('currentUserId')?.value;
-            if (!userId) return;
-
-            const psychologistLinks = document.querySelectorAll('.list-group-item');
-            psychologistLinks.forEach(link => {
-                const href = link.getAttribute('href');
-                const psychologistId = href.split('psychologistId=')[1];
-                if (psychologistId) {
-                    updateMessagePreview(userId, psychologistId, link);
-                }
-            });
-        }
-
-        function updateMessagePreview(userId, psychologistId, linkElement) {
-            fetch(`/api/messages/latest?user1Id=${userId}&user2Id=${psychologistId}`)
-                .then(response => {
-                    if (response.status === 204) {
-                        return null;
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data) {
-                        const preview = linkElement.querySelector('.message-preview');
-                        if (preview) {
-                            preview.textContent = data.content.length > 30 ?
-                                data.content.substring(0, 30) + '...' :
-                                data.content;
-                            preview.classList.remove('d-none');
-                        }
-                    }
-                })
-                .catch(error => console.error('Error getting message preview:', error));
         }
     </script>
 </section>

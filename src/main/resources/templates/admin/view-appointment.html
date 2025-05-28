@@ -81,7 +81,7 @@
                     <h5 class="modal-title" id="cancelAppointmentModalLabel">Confirm Cancellation</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="cancelAppointmentForm" method="post">
+                <form id="cancelAppointmentForm" method="post" th:action="@{/admin/appointments/{id}/cancel(id=${appointment.id})}">
                     <div class="modal-body">
                         <p>Are you sure you want to cancel this appointment?</p>
                         <p class="text-danger">This action cannot be undone.</p>
@@ -89,13 +89,6 @@
                         <div class="form-group mb-3">
                             <label for="cancelReason" class="form-label">Reason for Cancellation</label>
                             <textarea class="form-control" id="cancelReason" name="cancelReason" rows="3" required></textarea>
-                        </div>
-
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="notifyUsers" name="notifyUsers" checked>
-                            <label class="form-check-label" for="notifyUsers">
-                                Notify affected users via email
-                            </label>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -110,13 +103,11 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const cancelAppointmentModal = document.getElementById('cancelAppointmentModal');
-        if (cancelAppointmentModal) {
-            cancelAppointmentModal.addEventListener('show.bs.modal', function(event) {
-                const button = event.relatedTarget;
-                const appointmentId = button.getAttribute('data-appointment-id');
-                document.getElementById('cancelAppointmentForm').action = `/api/appointments/${appointmentId}/status?status=CANCELLED`;
-            });
+        console.log('Page loaded, current URL:', window.location.href);
+        
+        const cancelForm = document.getElementById('cancelAppointmentForm');
+        if (cancelForm) {
+            console.log('Cancel form action:', cancelForm.action);
         }
     });
 </script>

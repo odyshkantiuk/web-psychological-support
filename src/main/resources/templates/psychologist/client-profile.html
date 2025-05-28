@@ -121,7 +121,13 @@
                     <div th:unless="${journals.empty}" class="list-group list-group-flush">
                         <a th:each="journal : ${journals}"
                            th:href="@{'/psychologist/journal/' + ${journal.id}}"
-                           class="list-group-item list-group-item-action">
+                           class="list-group-item list-group-item-action journal-entry"
+                           th:data-journal-id="${journal.id}"
+                           th:data-encrypted="${journal.encrypted != null ? journal.encrypted : false}"
+                           th:data-content="${journal.content}"
+                           th:data-iv="${journal.encryptionIv}"
+                           th:data-hmac="${journal.encryptionHmac}"
+                           th:data-user-id="${journal.userId}">
                             <div class="d-flex w-100 justify-content-between">
                                 <h6 class="mb-1" th:text="${journal.title}">Journal Title</h6>
                                 <small th:text="${#temporals.format(journal.createdAt, 'MMM dd, yyyy')}">May 5, 2025</small>
@@ -135,7 +141,7 @@
                                     <i th:if="${journal.moodRating == 4}" class="bi bi-emoji-smile"></i>
                                     <i th:if="${journal.moodRating == 5}" class="bi bi-emoji-laughing"></i>
                                 </span>
-                                <small class="ms-2" th:text="${#strings.abbreviate(journal.content, 100)}">
+                                <small class="ms-2 journal-preview" th:id="'journal-preview-' + ${journal.id}" th:text="${#strings.abbreviate(journal.content, 100)}">
                                     Journal content preview...
                                 </small>
                             </div>
@@ -145,6 +151,55 @@
             </div>
         </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script th:src="@{/js/encryption.js}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function waitForEncryption() {
+                return new Promise((resolve) => {
+                    if (window.messageEncryption && window.messageEncryption.initialized) {
+                        resolve();
+                    } else {
+                        setTimeout(() => waitForEncryption().then(resolve), 100);
+                    }
+                });
+            }
+
+            waitForEncryption().then(async () => {
+                const journalEntries = document.querySelectorAll('.journal-entry');
+                
+                for (const entry of journalEntries) {
+                    const previewElement = entry.querySelector('.journal-preview');
+                    if (previewElement) {
+                        const isEncrypted = entry.getAttribute('data-encrypted') === 'true';
+                        
+                        if (isEncrypted) {
+                            try {
+                                const journalData = {
+                                    encrypted: true,
+                                    content: entry.getAttribute('data-content'),
+                                    iv: entry.getAttribute('data-iv'),
+                                    hmac: entry.getAttribute('data-hmac')
+                                };
+                                
+                                const userId = entry.getAttribute('data-user-id');
+                                const decryptedContent = await window.messageEncryption.decryptJournal(journalData, userId);
+
+                                const abbreviated = decryptedContent.length > 100 ? 
+                                    decryptedContent.substring(0, 97) + '...' : 
+                                    decryptedContent;
+                                previewElement.textContent = abbreviated;
+                            } catch (error) {
+                                console.error('Failed to decrypt journal preview:', error);
+                                previewElement.textContent = '[Preview unavailable]';
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 </section>
 </body>
 </html> 

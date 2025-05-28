@@ -3,7 +3,6 @@
       th:replace="~{main-layout :: layout('Shared Journals', ~{::section})}">
 <body>
 <section>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <div class="row mb-4">
         <div class="col">
@@ -72,7 +71,13 @@
                     <div th:unless="${journals.empty}" class="row row-cols-1 row-cols-md-2 g-4">
                         <div th:each="journal : ${journals}" class="col journal-card"
                              th:data-client="${journal.userId}"
-                             th:data-mood="${journal.moodRating}">
+                             th:data-mood="${journal.moodRating}"
+                             th:data-journal-id="${journal.id}"
+                             th:data-encrypted="${journal.encrypted != null ? journal.encrypted : false}"
+                             th:data-content="${journal.content}"
+                             th:data-iv="${journal.encryptionIv}"
+                             th:data-hmac="${journal.encryptionHmac}"
+                             th:data-user-id="${journal.userId}">
                             <div class="card h-100 hover-shadow">
                                 <div class="card-header bg-white">
                                     <div class="d-flex justify-content-between align-items-center">
@@ -100,7 +105,7 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <p class="card-text" th:text="${#strings.abbreviate(journal.content, 150)}">
+                                    <p class="card-text" id="journal-preview-[[${journal.id}]]" th:text="${#strings.abbreviate(journal.content, 150)}">
                                         Journal content preview...
                                     </p>
                                 </div>
@@ -217,8 +222,54 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script th:src="@{/js/encryption.js}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            function waitForEncryption() {
+                return new Promise((resolve) => {
+                    if (window.messageEncryption && window.messageEncryption.initialized) {
+                        resolve();
+                    } else {
+                        setTimeout(() => waitForEncryption().then(resolve), 100);
+                    }
+                });
+            }
+
+            waitForEncryption().then(async () => {
+                const journalCards = document.querySelectorAll('.journal-card');
+                
+                for (const card of journalCards) {
+                    const previewElement = card.querySelector('[id^="journal-preview-"]');
+                    if (previewElement) {
+                        const isEncrypted = card.getAttribute('data-encrypted') === 'true';
+                        
+                        if (isEncrypted) {
+                            try {
+                                const journalData = {
+                                    encrypted: true,
+                                    content: card.getAttribute('data-content'),
+                                    iv: card.getAttribute('data-iv'),
+                                    hmac: card.getAttribute('data-hmac')
+                                };
+                                
+                                const userId = card.getAttribute('data-user-id');
+                                const decryptedContent = await window.messageEncryption.decryptJournal(journalData, userId);
+
+                                const abbreviated = decryptedContent.length > 150 ? 
+                                    decryptedContent.substring(0, 147) + '...' : 
+                                    decryptedContent;
+                                previewElement.textContent = abbreviated;
+                            } catch (error) {
+                                console.error('Failed to decrypt journal preview:', error);
+                                previewElement.textContent = '[Preview unavailable]';
+                            }
+                        }
+                    }
+                }
+            });
+
             const searchInput = document.getElementById('searchJournals');
             const filterClient = document.getElementById('filterClient');
             const filterMood = document.getElementById('filterMood');

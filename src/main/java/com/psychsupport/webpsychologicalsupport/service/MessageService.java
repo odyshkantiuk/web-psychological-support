@@ -31,6 +31,14 @@ public class MessageService {
         message.setContent(messageDto.getContent());
         message.setSentAt(LocalDateTime.now());
 
+        if (messageDto.getEncrypted() != null && messageDto.getEncrypted()) {
+            message.setEncrypted(true);
+            message.setEncryptionIv(messageDto.getEncryptionIv());
+            message.setEncryptionHmac(messageDto.getEncryptionHmac());
+        } else {
+            message.setEncrypted(false);
+        }
+
         Message savedMessage = messageRepository.save(message);
         return convertToDto(savedMessage);
     }
@@ -160,6 +168,9 @@ public class MessageService {
         dto.setContent(message.getContent());
         dto.setSentAt(message.getSentAt());
         dto.setReadAt(message.getReadAt());
+        dto.setEncrypted(message.getEncrypted() != null ? message.getEncrypted() : false);
+        dto.setEncryptionIv(message.getEncryptionIv());
+        dto.setEncryptionHmac(message.getEncryptionHmac());
         return dto;
     }
 }

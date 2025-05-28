@@ -28,7 +28,12 @@
 
             <div th:unless="${journals.empty}" class="row">
                 <div th:each="journal : ${journals}" class="col-md-6 mb-4">
-                    <div class="card h-100 journal-card">
+                    <div class="card h-100 journal-card"
+                         th:data-journal-id="${journal.id}"
+                         th:data-encrypted="${journal.encrypted}"
+                         th:data-content="${journal.content}"
+                         th:data-iv="${journal.encryptionIv}"
+                         th:data-hmac="${journal.encryptionHmac}">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0" th:text="${journal.title}">Journal Title</h5>
                             <span th:if="${journal.moodRating != null}"
@@ -49,7 +54,7 @@
                                     Date and Time
                                 </small>
                             </p>
-                            <p class="card-text" th:text="${#strings.abbreviate(journal.content, 150)}">
+                            <p class="card-text" id="journal-preview-[[${journal.id}]]" th:text="${#strings.abbreviate(journal.content, 150)}">
                                 Journal content preview...
                             </p>
                         </div>
@@ -169,8 +174,41 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script th:src="@{/js/encryption.js}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            const journalCards = document.querySelectorAll('.journal-card');
+
+            for (const card of journalCards) {
+                const previewElement = card.querySelector('[id^="journal-preview-"]');
+                if (previewElement) {
+                    const isEncrypted = card.getAttribute('data-encrypted') === 'true';
+
+                    if (isEncrypted) {
+                        try {
+                            const journalData = {
+                                encrypted: true,
+                                content: card.getAttribute('data-content'),
+                                iv: card.getAttribute('data-iv'),
+                                hmac: card.getAttribute('data-hmac')
+                            };
+
+                            const userId = [[${user.id}]];
+                            const decryptedContent = await window.messageEncryption.decryptJournal(journalData, userId);
+
+                            const abbreviated = decryptedContent.length > 150 ?
+                                decryptedContent.substring(0, 147) + '...' :
+                                decryptedContent;
+                            previewElement.textContent = abbreviated;
+                        } catch (error) {
+                            console.error('Failed to decrypt journal preview:', error);
+                            previewElement.textContent = '[Preview unavailable]';
+                        }
+                    }
+                }
+            }
+
             const deleteButtons = document.querySelectorAll('[data-bs-target="#deleteJournalModal"]');
             deleteButtons.forEach(button => {
                 button.addEventListener('click', function() {
@@ -191,17 +229,17 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''
                         }
                     })
-                    .then(response => {
-                        if (response.ok) {
-                            window.location.reload();
-                        } else {
-                            throw new Error('Failed to delete journal');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Failed to delete journal. Please try again.');
-                    });
+                        .then(response => {
+                            if (response.ok) {
+                                window.location.reload();
+                            } else {
+                                throw new Error('Failed to delete journal');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Failed to delete journal. Please try again.');
+                        });
                 });
             }
 
@@ -215,7 +253,7 @@
             const journalForm = document.getElementById('journalForm');
 
             if (journalForm) {
-                journalForm.addEventListener('submit', function(e) {
+                journalForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
 
                     const userId = document.querySelector('input[name="userId"]').value;
@@ -224,36 +262,46 @@
                     const moodRating = document.querySelector('input[name="moodRating"]').value;
                     const sharedWithPsychologistId = document.querySelector('select[name="sharedWithPsychologistId"]').value;
 
-                    const journalData = {
-                        userId: userId,
-                        title: title,
-                        content: content,
-                        moodRating: moodRating ? parseInt(moodRating) : null
-                    };
+                    try {
+                        const encryptedData = await window.messageEncryption.encryptJournal(content, userId);
 
-                    if (sharedWithPsychologistId) {
-                        journalData.sharedWithPsychologistId = parseInt(sharedWithPsychologistId);
-                    }
+                        const journalData = {
+                            userId: userId,
+                            title: title,
+                            content: encryptedData.content,
+                            moodRating: moodRating ? parseInt(moodRating) : null,
+                            encrypted: encryptedData.encrypted,
+                            encryptionIv: encryptedData.iv,
+                            encryptionHmac: encryptedData.hmac
+                        };
 
-                    fetch('/api/journals', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''
-                        },
-                        body: JSON.stringify(journalData)
-                    })
-                        .then(response => {
-                            if (response.ok) {
-                                window.location.href = '/client/journal';
-                            } else {
-                                throw new Error('Failed to create journal entry');
-                            }
+                        if (sharedWithPsychologistId) {
+                            journalData.sharedWithPsychologistId = parseInt(sharedWithPsychologistId);
+                        }
+
+                        fetch('/api/journals', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''
+                            },
+                            body: JSON.stringify(journalData)
                         })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Failed to create journal entry. Please try again.');
-                        });
+                            .then(response => {
+                                if (response.ok) {
+                                    window.location.href = '/client/journal';
+                                } else {
+                                    throw new Error('Failed to create journal entry');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('Failed to create journal entry. Please try again.');
+                            });
+                    } catch (error) {
+                        console.error('Encryption error:', error);
+                        alert('Failed to encrypt journal entry. Please try again.');
+                    }
                 });
             }
         });

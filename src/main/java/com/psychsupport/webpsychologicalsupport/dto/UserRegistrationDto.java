@@ -15,4 +15,6 @@ public class UserRegistrationDto {
     private String fullName;
     private String phoneNumber;
     private User.Role role;
+    private String bio;
+    private boolean verified;
 }

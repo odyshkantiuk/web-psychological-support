@@ -87,7 +87,11 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    <tr th:each="psych : ${psychologists}">
+                                    <tr th:each="psych : ${psychologists}" 
+                                        th:data-created="${psych.createdAt}" 
+                                        th:data-name="${psych.fullName}" 
+                                        th:data-email="${psych.email}"
+                                        th:data-verified="${psych.verified}">
                                         <td th:text="${psych.id}">1</td>
                                         <td>
                                             <div class="d-flex align-items-center">
@@ -322,6 +326,97 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchPsychologists');
+            const sortSelect = document.getElementById('sortPsychologists');
+            const searchButton = document.querySelector('#all-psychologists .btn-primary');
+            
+            let allPsychologists = [];
+            
+            function initializePsychologists() {
+                const psychRows = document.querySelectorAll('#all-psychologists tbody tr');
+                allPsychologists = Array.from(psychRows).map(row => {
+                    const createdAttr = row.getAttribute('data-created');
+                    const nameAttr = row.getAttribute('data-name');
+                    const emailAttr = row.getAttribute('data-email');
+                    const verifiedAttr = row.getAttribute('data-verified');
+                    
+                    let createdDate;
+                    try {
+                        createdDate = new Date(createdAttr);
+                        if (isNaN(createdDate.getTime())) {
+                            const dateText = row.cells[3].textContent.trim();
+                            createdDate = new Date(dateText);
+                        }
+                    } catch (e) {
+                        createdDate = new Date();
+                    }
+                    
+                    return {
+                        element: row,
+                        name: nameAttr || row.cells[1].textContent.trim(),
+                        email: emailAttr || row.cells[2].textContent.trim(),
+                        created: createdDate,
+                        verified: verifiedAttr === 'true' || row.cells[4].textContent.includes('Verified')
+                    };
+                });
+                
+                console.log('Initialized psychologists:', allPsychologists);
+            }
+            
+            function filterAndSort() {
+                const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+                const sortValue = sortSelect ? sortSelect.value : 'newest';
+                
+                console.log('Applying filter and sort:', { searchTerm, sortValue });
+                
+                let filteredPsychs = allPsychologists.filter(psych => {
+                    return psych.name.toLowerCase().includes(searchTerm) ||
+                           psych.email.toLowerCase().includes(searchTerm);
+                });
+                
+                console.log('Filtered psychologists:', filteredPsychs.length);
+
+                filteredPsychs.sort((a, b) => {
+                    switch(sortValue) {
+                        case 'oldest':
+                            console.log('Sorting oldest first');
+                            return a.created.getTime() - b.created.getTime();
+                        case 'name_asc':
+                            console.log('Sorting name A-Z');
+                            return a.name.localeCompare(b.name);
+                        case 'name_desc':
+                            console.log('Sorting name Z-A');
+                            return b.name.localeCompare(a.name);
+                        case 'newest':
+                        default:
+                            console.log('Sorting newest first');
+                            return b.created.getTime() - a.created.getTime();
+                    }
+                });
+
+                const tbody = document.querySelector('#all-psychologists tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    filteredPsychs.forEach(psych => tbody.appendChild(psych.element));
+                    console.log('Table updated with', filteredPsychs.length, 'rows');
+                }
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', filterAndSort);
+            }
+            
+            if (searchButton) {
+                searchButton.addEventListener('click', filterAndSort);
+            }
+            
+            if (sortSelect) {
+                sortSelect.addEventListener('change', filterAndSort);
+            }
+
+            initializePsychologists();
+            filterAndSort();
+
             const deletePsychologistModal = document.getElementById('deletePsychologistModal');
             if (deletePsychologistModal) {
                 deletePsychologistModal.addEventListener('show.bs.modal', function(event) {
@@ -330,8 +425,35 @@
                     const psychName = button.getAttribute('data-psych-name');
 
                     document.getElementById('deletePsychName').textContent = psychName;
-                    document.getElementById('deletePsychologistForm').action = `/api/users/${psychId}`;
+                    document.getElementById('deletePsychologistForm').action = `/admin/psychologists/${psychId}`;
                 });
+
+                const deleteForm = document.getElementById('deletePsychologistForm');
+                if (deleteForm) {
+                    deleteForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const form = this;
+                        
+                        fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams(new FormData(form))
+                        }).then(response => {
+                            if (response.ok) {
+                                const modal = bootstrap.Modal.getInstance(deletePsychologistModal);
+                                modal.hide();
+                                window.location.reload();
+                            } else {
+                                alert('Error deleting psychologist. Please try again.');
+                            }
+                        }).catch(error => {
+                            console.error('Error:', error);
+                            alert('Error deleting psychologist. Please try again.');
+                        });
+                    });
+                }
             }
 
             const verifyPsychologistModal = document.getElementById('verifyPsychologistModal');

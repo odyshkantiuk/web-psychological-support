@@ -76,19 +76,19 @@
                         Error message
                     </div>
 
-                    <form th:action="@{/admin/users/edit/{id}(id=${editUser.id})}" method="post">
+                    <form th:action="@{/admin/users/edit/{id}(id=${editUser.id})}" th:object="${editUser}" method="post">
                         <h6 class="border-bottom pb-2 mb-3">Personal Information</h6>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="fullName" class="form-label">Full Name</label>
-                                    <input type="text" class="form-control" id="fullName" name="fullName" th:value="${editUser.fullName}" required>
+                                    <input type="text" class="form-control" id="fullName" th:field="*{fullName}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="email" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="email" name="email" th:value="${editUser.email}" required>
+                                    <input type="email" class="form-control" id="email" th:field="*{email}" required>
                                 </div>
                             </div>
                         </div>
@@ -97,17 +97,17 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="phoneNumber" class="form-label">Phone Number</label>
-                                    <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber" th:value="${editUser.phoneNumber}">
+                                    <input type="tel" class="form-control" id="phoneNumber" th:field="*{phoneNumber}">
                                     <div class="form-text">Optional</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="role" class="form-label">Role</label>
-                                    <select class="form-select" id="role" name="role" required>
-                                        <option value="CLIENT" th:selected="${editUser.role.name() == 'CLIENT'}">Client</option>
-                                        <option value="PSYCHOLOGIST" th:selected="${editUser.role.name() == 'PSYCHOLOGIST'}">Psychologist</option>
-                                        <option value="ADMIN" th:selected="${editUser.role.name() == 'ADMIN'}">Administrator</option>
+                                    <select class="form-select" id="role" th:field="*{role}" required>
+                                        <option value="CLIENT">Client</option>
+                                        <option value="PSYCHOLOGIST">Psychologist</option>
+                                        <option value="ADMIN">Administrator</option>
                                     </select>
                                 </div>
                             </div>
@@ -117,12 +117,12 @@
                             <h6 class="border-bottom pb-2 mb-3">Professional Information</h6>
                             <div class="mb-3">
                                 <label for="bio" class="form-label">Professional Bio</label>
-                                <textarea class="form-control" id="bio" name="bio" rows="4" th:text="${editUser.bio}"></textarea>
+                                <textarea class="form-control" id="bio" th:field="*{bio}" rows="4"></textarea>
                             </div>
 
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="isVerified" name="isVerified">
-                                <label class="form-check-label" for="isVerified">
+                                <input class="form-check-input" type="checkbox" id="verified" th:field="*{verified}">
+                                <label class="form-check-label" for="verified">
                                     Verified Professional
                                 </label>
                                 <div class="form-text">Check this if credentials have been verified.</div>
@@ -179,8 +179,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form id="deleteUserForm" method="post">
+                    <form id="deleteUserForm" method="post" action="/admin/users">
                         <input type="hidden" name="_method" value="DELETE">
+                        <input type="hidden" name="userId" id="deleteUserId" value="">
                         <button type="submit" class="btn btn-danger">Delete User</button>
                     </form>
                 </div>
@@ -229,7 +230,7 @@
                     const userName = button.getAttribute('data-user-name');
 
                     document.getElementById('deleteUserName').textContent = userName;
-                    document.getElementById('deleteUserForm').action = `/admin/users/${userId}`;
+                    document.getElementById('deleteUserId').value = userId;
                 });
 
                 const deleteUserForm = document.getElementById('deleteUserForm');

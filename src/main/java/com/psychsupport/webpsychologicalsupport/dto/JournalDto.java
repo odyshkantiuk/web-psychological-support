@@ -21,4 +21,8 @@ public class JournalDto {
     private Long sharedWithPsychologistId;
     private String sharedWithPsychologistName;
     private boolean removeSharing;
+
+    private Boolean encrypted = false;
+    private String encryptionIv;
+    private String encryptionHmac;
 }

@@ -17,6 +17,9 @@ public class ChatMessage {
     private String receiverName;
     private String content;
     private LocalDateTime timestamp;
+    private Boolean encrypted;
+    private String encryptionIv;
+    private String encryptionHmac;
 
     public enum MessageType {
         CHAT,

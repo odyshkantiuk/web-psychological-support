@@ -26,8 +26,17 @@ public class Message {
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
 
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false, length = 4000)
     private String content;
+
+    @Column(name = "is_encrypted")
+    private Boolean encrypted = false;
+
+    @Column(name = "encryption_iv", length = 500)
+    private String encryptionIv;
+
+    @Column(name = "encryption_hmac", length = 500)
+    private String encryptionHmac;
 
     @Column(nullable = false)
     private LocalDateTime sentAt;

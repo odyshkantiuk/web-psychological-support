@@ -1,5 +1,6 @@
 package com.psychsupport.webpsychologicalsupport.dto;
 
+import com.psychsupport.webpsychologicalsupport.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,4 +16,6 @@ public class UserUpdateDto {
     private String bio;
     private String profilePicture;
     private String cv;
+    private User.Role role;
+    private Boolean isVerified;
 }

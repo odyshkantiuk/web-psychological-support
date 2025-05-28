@@ -21,6 +21,9 @@ public class MessageDto {
     private String content;
     private LocalDateTime sentAt;
     private LocalDateTime readAt;
+    private Boolean encrypted;
+    private String encryptionIv;
+    private String encryptionHmac;
 
     public static MessageDto fromMessage(Message message) {
         return MessageDto.builder()
@@ -29,8 +32,12 @@ public class MessageDto {
                 .receiverId(message.getReceiver().getId())
                 .content(message.getContent())
                 .sentAt(message.getSentAt())
+                .readAt(message.getReadAt())
                 .senderName(message.getSender().getUsername())
                 .receiverName(message.getReceiver().getUsername())
+                .encrypted(message.getEncrypted() != null ? message.getEncrypted() : false)
+                .encryptionIv(message.getEncryptionIv())
+                .encryptionHmac(message.getEncryptionHmac())
                 .build();
     }
 }

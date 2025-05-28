@@ -41,6 +41,15 @@ public class Journal {
     @JoinColumn(name = "shared_with_psychologist_id")
     private User sharedWithPsychologist;
 
+    @Column
+    private Boolean encrypted = false;
+
+    @Column
+    private String encryptionIv;
+
+    @Column
+    private String encryptionHmac;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -108,6 +108,7 @@ body {
     padding: 1rem;
     border-radius: 1rem;
     max-width: 80%;
+    position: relative;
 }
 
 .message-sent {
@@ -123,6 +124,18 @@ body {
     margin-right: auto;
 }
 
+.message-encrypted {
+    border-left: 3px solid #14a44d;
+}
+
+.message-sent.message-encrypted {
+    border-left: 3px solid rgba(255, 255, 255, 0.8);
+}
+
+.message-content {
+    position: relative;
+}
+
 .message-time {
     font-size: 0.75rem;
     margin-top: 0.25rem;
@@ -134,6 +147,30 @@ body {
 
 .message-received .message-time {
     color: #666 !important;
+}
+
+.encryption-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.3rem;
+    border-radius: 0.25rem;
+    background-color: rgba(20, 164, 77, 0.1);
+    color: #14a44d;
+    border: 1px solid rgba(20, 164, 77, 0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-left: 0.5rem;
+}
+
+.message-sent .encryption-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.encryption-status {
+    font-size: 0.75rem;
+    margin-left: 0.5rem !important;
 }
 
 .chat-container {

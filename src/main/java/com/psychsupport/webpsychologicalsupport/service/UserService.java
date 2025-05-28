@@ -6,11 +6,16 @@ import com.psychsupport.webpsychologicalsupport.exception.InvalidPasswordExcepti
 import com.psychsupport.webpsychologicalsupport.exception.ResourceNotFoundException;
 import com.psychsupport.webpsychologicalsupport.exception.UserAlreadyExistsException;
 import com.psychsupport.webpsychologicalsupport.model.User;
+import com.psychsupport.webpsychologicalsupport.repository.AppointmentRepository;
+import com.psychsupport.webpsychologicalsupport.repository.AvailabilityRepository;
+import com.psychsupport.webpsychologicalsupport.repository.JournalRepository;
+import com.psychsupport.webpsychologicalsupport.repository.MessageRepository;
 import com.psychsupport.webpsychologicalsupport.repository.UserRepository;
 import com.psychsupport.webpsychologicalsupport.security.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +25,10 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final JournalRepository journalRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final MessageRepository messageRepository;
+    private final AvailabilityRepository availabilityRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordValidator passwordValidator;
 
@@ -45,6 +54,15 @@ public class UserService {
         user.setPhoneNumber(registrationDto.getPhoneNumber());
         user.setRole(registrationDto.getRole());
         user.setCreatedAt(LocalDateTime.now());
+
+        if (registrationDto.getBio() != null && !registrationDto.getBio().trim().isEmpty()) {
+            user.setBio(registrationDto.getBio());
+        }
+
+        user.setVerified(registrationDto.isVerified());
+        if (registrationDto.isVerified()) {
+            user.setVerifiedAt(LocalDateTime.now());
+        }
 
         return userRepository.save(user);
     }
@@ -137,8 +155,75 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User updateUserAsAdmin(Long id, UserUpdateDto updateDto) {
+        User user = getUserById(id);
+
+        if (updateDto.getFullName() != null) {
+            user.setFullName(updateDto.getFullName());
+        }
+
+        if (updateDto.getEmail() != null && !updateDto.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(updateDto.getEmail())) {
+                throw new UserAlreadyExistsException("Email already exists");
+            }
+            user.setEmail(updateDto.getEmail());
+        }
+
+        if (updateDto.getPhoneNumber() != null) {
+            user.setPhoneNumber(updateDto.getPhoneNumber());
+        }
+
+        if (updateDto.getBio() != null) {
+            user.setBio(updateDto.getBio());
+        }
+
+        if (updateDto.getProfilePicture() != null) {
+            user.setProfilePicture(updateDto.getProfilePicture());
+        }
+
+        if (updateDto.getCv() != null) {
+            user.setCv(updateDto.getCv());
+        }
+
+        if (updateDto.getRole() != null) {
+            user.setRole(updateDto.getRole());
+        }
+
+        if (updateDto.getIsVerified() != null) {
+            user.setVerified(updateDto.getIsVerified());
+            if (updateDto.getIsVerified()) {
+                user.setVerifiedAt(LocalDateTime.now());
+            } else {
+                user.setVerifiedAt(null);
+            }
+        }
+
+        if (updateDto.getPassword() != null && !updateDto.getPassword().isEmpty()) {
+            List<String> passwordErrors = passwordValidator.validate(updateDto.getPassword());
+            if (!passwordErrors.isEmpty()) {
+                throw new InvalidPasswordException("Password does not meet security requirements", passwordErrors);
+            }
+            
+            user.setPassword(passwordEncoder.encode(updateDto.getPassword()));
+        }
+
+        return userRepository.save(user);
+    }
+
+    @Transactional
     public void deleteUser(Long id) {
         User user = getUserById(id);
+
+        journalRepository.clearSharedWithPsychologistByUserId(id);
+
+        messageRepository.deleteAllByUserId(id);
+
+        appointmentRepository.deleteAllByUserId(id);
+
+        if (user.getRole() == User.Role.PSYCHOLOGIST) {
+            availabilityRepository.deleteAllByPsychologistId(id);
+        }
+
         userRepository.delete(user);
     }
 

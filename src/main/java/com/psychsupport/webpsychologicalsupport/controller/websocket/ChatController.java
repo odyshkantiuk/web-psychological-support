@@ -32,6 +32,13 @@ public class ChatController {
         messageDto.setSenderId(chatMessage.getSenderId());
         messageDto.setReceiverId(chatMessage.getReceiverId());
         messageDto.setContent(chatMessage.getContent());
+
+        if (chatMessage.getEncrypted() != null && chatMessage.getEncrypted()) {
+            messageDto.setEncrypted(true);
+            messageDto.setEncryptionIv(chatMessage.getEncryptionIv());
+            messageDto.setEncryptionHmac(chatMessage.getEncryptionHmac());
+        }
+        
         MessageDto savedMessage = messageService.sendMessage(messageDto);
 
         messagingTemplate.convertAndSendToUser(
@@ -44,7 +51,7 @@ public class ChatController {
                 savedMessage.getId(),
                 chatMessage.getSenderId(),
                 chatMessage.getSenderName(),
-                chatMessage.getContent()
+                "New message"
         );
 
         messagingTemplate.convertAndSendToUser(
@@ -55,7 +62,7 @@ public class ChatController {
 
         System.out.println("Message sent from " + chatMessage.getSenderName() +
                 " to " + chatMessage.getReceiverName() +
-                " with content: " + chatMessage.getContent());
+                " (encrypted: " + (chatMessage.getEncrypted() != null ? chatMessage.getEncrypted() : false) + ")");
     }
 
     @MessageMapping("/chat.join")

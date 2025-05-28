@@ -83,11 +83,13 @@ public class PsychologistController {
 
             AppointmentDto lastSession = clientAppointments.stream()
                     .filter(a -> a.getStartTime().isBefore(java.time.LocalDateTime.now()))
+                    .filter(a -> a.getStatus().name().equals("COMPLETED"))
                     .max(Comparator.comparing(AppointmentDto::getStartTime))
                     .orElse(null);
 
             AppointmentDto nextAppointment = clientAppointments.stream()
                     .filter(a -> a.getStartTime().isAfter(java.time.LocalDateTime.now()))
+                    .filter(a -> a.getStatus().name().equals("SCHEDULED"))
                     .min(Comparator.comparing(AppointmentDto::getStartTime))
                     .orElse(null);
 

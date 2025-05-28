@@ -38,4 +38,4 @@ public class MultipartConfig implements WebMvcConfigurer {
         configurer.mediaType("form", MediaType.MULTIPART_FORM_DATA);
         configurer.mediaType("multipart/form-data", MediaType.MULTIPART_FORM_DATA);
     }
-} 
+}

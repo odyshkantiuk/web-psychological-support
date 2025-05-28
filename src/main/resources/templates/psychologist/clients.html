@@ -197,9 +197,25 @@
 
             const searchInput = document.getElementById('searchClient');
             const searchButton = document.getElementById('searchButton');
-            const clientCards = document.querySelectorAll('.row-cols-1 > .col');
+            const clientsContainer = document.querySelector('.row-cols-1');
 
-            if (searchButton && searchInput) {
+            function searchClients() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const clientCards = clientsContainer.querySelectorAll('.col');
+
+                clientCards.forEach(card => {
+                    const clientName = card.querySelector('.card-title').textContent.toLowerCase();
+                    const clientEmail = card.querySelector('.text-muted').textContent.toLowerCase();
+
+                    if (clientName.includes(searchTerm) || clientEmail.includes(searchTerm)) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+
+            if (searchButton && searchInput && clientsContainer) {
                 searchButton.addEventListener('click', function() {
                     searchClients();
                 });
@@ -209,21 +225,6 @@
                         searchClients();
                     }
                 });
-
-                function searchClients() {
-                    const searchTerm = searchInput.value.toLowerCase();
-
-                    clientCards.forEach(card => {
-                        const clientName = card.querySelector('.card-title').textContent.toLowerCase();
-                        const clientEmail = card.querySelector('.text-muted').textContent.toLowerCase();
-
-                        if (clientName.includes(searchTerm) || clientEmail.includes(searchTerm)) {
-                            card.style.display = '';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
-                }
             }
 
             const clientNotesModal = document.getElementById('clientNotesModal');
@@ -253,8 +254,131 @@
             const sortClients = document.getElementById('sortClients');
             if (sortClients) {
                 sortClients.addEventListener('change', function() {
-                    console.log('Sorting clients by: ' + this.value);
+                    const sortBy = this.value;
+                    const clientsContainer = document.querySelector('.row-cols-1');
+                    
+                    if (!clientsContainer) return;
+                    
+                    const clientCards = Array.from(clientsContainer.children);
+                    if (clientCards.length === 0) return;
+                    
+                    clientCards.sort((a, b) => {
+                        switch (sortBy) {
+                            case 'newest':
+                                return compareDates(getClientSinceDate(b), getClientSinceDate(a));
+                            case 'oldest':
+                                return compareDates(getClientSinceDate(a), getClientSinceDate(b));
+                            case 'name_asc':
+                                return getClientName(a).localeCompare(getClientName(b));
+                            case 'name_desc':
+                                return getClientName(b).localeCompare(getClientName(a));
+                            case 'last_appointment':
+                                return compareDates(getLastAppointmentDate(b), getLastAppointmentDate(a));
+                            case 'next_appointment':
+                                return compareDates(getNextAppointmentDate(a), getNextAppointmentDate(b));
+                            default:
+                                return 0;
+                        }
+                    });
+                    
+                    clientCards.forEach(card => clientsContainer.appendChild(card));
+                    
+                    if (searchInput && searchInput.value.trim() !== '') {
+                        searchClients();
+                    }
                 });
+            }
+            
+            function getClientName(cardElement) {
+                const titleElement = cardElement.querySelector('.card-title');
+                return titleElement ? titleElement.textContent.trim() : 'Unknown Client';
+            }
+
+            function parseUkrainianDate(dateText) {
+                const monthMap = {
+                    'січня': 'January',
+                    'лютого': 'February', 
+                    'березня': 'March',
+                    'квітня': 'April',
+                    'травня': 'May',
+                    'червня': 'June',
+                    'липня': 'July',
+                    'серпня': 'August',
+                    'вересня': 'September',
+                    'жовтня': 'October',
+                    'листопада': 'November',
+                    'грудня': 'December'
+                };
+                
+                let englishDate = dateText;
+                for (const [ukrainian, english] of Object.entries(monthMap)) {
+                    if (dateText.includes(ukrainian)) {
+                        englishDate = dateText.replace(ukrainian, english);
+                        break;
+                    }
+                }
+                
+                return new Date(englishDate);
+            }
+
+            function getClientSinceDate(cardElement) {
+                const paragraphs = cardElement.querySelectorAll('p');
+                for (let p of paragraphs) {
+                    const strongText = p.querySelector('strong');
+                    if (strongText && strongText.textContent.includes('Client since:')) {
+                        const span = p.querySelector('span');
+                        if (span) {
+                            return parseUkrainianDate(span.textContent.trim());
+                        }
+                    }
+                }
+                return new Date('1900-01-01');
+            }
+            
+            function getLastAppointmentDate(cardElement) {
+                const paragraphs = cardElement.querySelectorAll('p');
+                for (let p of paragraphs) {
+                    const strongText = p.querySelector('strong');
+                    if (strongText && strongText.textContent.includes('Last session:')) {
+                        const span = p.querySelector('span');
+                        if (span) {
+                            const dateText = span.textContent.trim();
+                            if (dateText === '—' || dateText === '') {
+                                return new Date('1900-01-01');
+                            }
+                            return parseUkrainianDate(dateText);
+                        }
+                    }
+                }
+                return new Date('1900-01-01');
+            }
+            
+            function getNextAppointmentDate(cardElement) {
+                const paragraphs = cardElement.querySelectorAll('p');
+                for (let p of paragraphs) {
+                    const strongText = p.querySelector('strong');
+                    if (strongText && strongText.textContent.includes('Next appointment:')) {
+                        const span = p.querySelector('span');
+                        if (span) {
+                            const dateText = span.textContent.trim();
+                            if (dateText === '—' || dateText === '') {
+                                return new Date('2099-12-31');
+                            }
+                            return parseUkrainianDate(dateText);
+                        }
+                    }
+                }
+                return new Date('2099-12-31');
+            }
+            
+            function compareDates(date1, date2) {
+                if (isNaN(date1.getTime()) && isNaN(date2.getTime())) return 0;
+                if (isNaN(date1.getTime())) return 1;
+                if (isNaN(date2.getTime())) return -1;
+                
+                if (date1 < date2) return -1;
+                if (date1 > date2) return 1;
+                return 0;
             }
         });
     </script>

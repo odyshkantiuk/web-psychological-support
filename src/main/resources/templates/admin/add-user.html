@@ -96,13 +96,13 @@
                         <div id="psychologistFields" style="display: none;">
                             <div class="mb-3">
                                 <label for="bio" class="form-label">Professional Bio</label>
-                                <textarea class="form-control" id="bio" name="bio" rows="4"></textarea>
+                                <textarea class="form-control" id="bio" th:field="*{bio}" rows="4"></textarea>
                                 <div class="form-text">Professional background, specialties, and approach.</div>
                             </div>
 
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="isVerified" name="isVerified">
-                                <label class="form-check-label" for="isVerified">
+                                <input class="form-check-input" type="checkbox" id="verified" th:field="*{verified}">
+                                <label class="form-check-label" for="verified">
                                     Verified Professional
                                 </label>
                                 <div class="form-text">Check this if credentials have been verified.</div>

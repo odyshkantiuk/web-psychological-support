@@ -60,7 +60,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const errorParam = urlParams.get('error');
-            
+
             if (errorParam) {
                 const errorElement = document.querySelector('.alert-danger');
                 if (errorElement) {

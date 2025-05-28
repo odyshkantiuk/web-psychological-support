@@ -30,6 +30,18 @@ public class UserDto {
         return profilePicture != null && !profilePicture.isEmpty();
     }
 
+    public boolean isVerified() {
+        return isVerified;
+    }
+
+    public void setVerified(boolean verified) {
+        this.isVerified = verified;
+    }
+
+    public boolean getVerified() {
+        return isVerified;
+    }
+
     public static UserDto fromUser(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());

@@ -66,9 +66,9 @@
                         <a th:href="@{'/psychologist/messages?clientId=' + ${client.id}}" class="btn btn-outline-primary">
                             <i class="bi bi-chat-dots me-1"></i>Message Client
                         </a>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addNotesModal">
-                            <i class="bi bi-journal-plus me-1"></i>Add Notes
-                        </button>
+                        <a th:href="@{/psychologist/clients/{id}(id=${client.id})}" class="btn btn-primary">
+                            <i class="bi bi-person-lines-fill me-1"></i>View Client Profile
+                        </a>
                     </div>
                 </div>
             </div>
@@ -96,11 +96,6 @@
                         <p class="mb-0" th:text="${#temporals.format(client.createdAt, 'MMMM dd, yyyy')}">January 15, 2023</p>
                     </div>
 
-                    <div class="mb-3">
-                        <h6>Next Appointment</h6>
-                        <p class="mb-0 text-primary">May 10, 2025 at 10:00 AM</p>
-                    </div>
-
                     <div class="d-grid gap-2">
                         <a th:href="@{/psychologist/clients/{id}(id=${client.id})}" class="btn btn-outline-primary">
                             <i class="bi bi-person-lines-fill me-1"></i>View Full Profile
@@ -111,242 +106,42 @@
                     </div>
                 </div>
             </div>
-
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Journal History</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        <a href="#" class="list-group-item list-group-item-action active px-0 border-0">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">Today's Reflection</h6>
-                                <small>May 5, 2025</small>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <span class="mood-rating mood-rating-4">
-                                    <i class="bi bi-emoji-smile"></i>
-                                </span>
-                                <small class="ms-2">You are currently viewing this entry</small>
-                            </div>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action px-0 border-0">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">Weekly Progress</h6>
-                                <small>May 1, 2025</small>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <span class="mood-rating mood-rating-3">
-                                    <i class="bi bi-emoji-neutral"></i>
-                                </span>
-                                <small class="ms-2">Neutral mood entry</small>
-                            </div>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action px-0 border-0">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">Anxiety Triggers</h6>
-                                <small>April 25, 2025</small>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <span class="mood-rating mood-rating-2">
-                                    <i class="bi bi-emoji-expressionless"></i>
-                                </span>
-                                <small class="ms-2">Negative mood entry</small>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                <div class="card-footer bg-white text-center">
-                    <a th:href="@{'/psychologist/client/' + ${client.id} + '/journals'}" class="text-decoration-none">
-                        View All Journal Entries <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Mood Trend</h5>
-                </div>
-                <div class="card-body">
-                    <div id="clientMoodChart" style="height: 200px;"></div>
-                    <div class="text-center mt-3">
-                        <small class="text-muted">Based on the last 10 journal entries</small>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
-    <div class="modal fade" id="addNotesModal" tabindex="-1" aria-labelledby="addNotesModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addNotesModalLabel">Add Notes on This Journal Entry</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="journalNotesForm">
-                        <input type="hidden" id="journalId" th:value="${journal.id}">
-                        <input type="hidden" id="clientId" th:value="${client.id}">
-
-                        <div class="mb-3">
-                            <label for="journalNotes" class="form-label">Your Professional Notes</label>
-                            <textarea class="form-control" id="journalNotes" rows="6" placeholder="Add your observations, analysis, or follow-up items based on this journal entry..."></textarea>
-                            <div class="form-text">These notes are private and only visible to you.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Flags/Concerns</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="flagUrgent">
-                                <label class="form-check-label" for="flagUrgent">
-                                    Flag as urgent/requiring immediate attention
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="flagFollowUp">
-                                <label class="form-check-label" for="flagFollowUp">
-                                    Add to follow-up discussion in next session
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="flagRiskIndicator">
-                                <label class="form-check-label" for="flagRiskIndicator">
-                                    Potential risk indicator
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Mood Assessment (Your Professional Assessment)</label>
-                            <div class="d-flex justify-content-between">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="moodAssessment" id="mood1" value="1">
-                                    <label class="form-check-label" for="mood1">
-                                        <i class="bi bi-emoji-frown"></i>
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="moodAssessment" id="mood2" value="2">
-                                    <label class="form-check-label" for="mood2">
-                                        <i class="bi bi-emoji-expressionless"></i>
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="moodAssessment" id="mood3" value="3" checked>
-                                    <label class="form-check-label" for="mood3">
-                                        <i class="bi bi-emoji-neutral"></i>
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="moodAssessment" id="mood4" value="4">
-                                    <label class="form-check-label" for="mood4">
-                                        <i class="bi bi-emoji-smile"></i>
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="moodAssessment" id="mood5" value="5">
-                                    <label class="form-check-label" for="mood5">
-                                        <i class="bi bi-emoji-laughing"></i>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveJournalNotes">Save Notes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script th:src="@{/js/encryption.js}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            const journalData = {
+                encrypted: [[${journal.encrypted}]] || false,
+                content: `[[${journal.content}]]`,
+                iv: `[[${journal.encryptionIv}]]`,
+                hmac: `[[${journal.encryptionHmac}]]`
+            };
+
+            if (journalData.encrypted) {
+                try {
+                    const userId = [[${journal.userId}]];
+                    const decryptedContent = await window.messageEncryption.decryptJournal(journalData, userId);
+
+                    const contentElement = document.querySelector('.journal-content p');
+                    if (contentElement) {
+                        contentElement.innerHTML = decryptedContent.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
+                    }
+                } catch (error) {
+                    console.error('Failed to decrypt journal content:', error);
+                    const contentElement = document.querySelector('.journal-content p');
+                    if (contentElement) {
+                        contentElement.textContent = '[Journal content could not be decrypted]';
+                    }
+                }
+            }
+
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
-
-            const saveJournalNotesBtn = document.getElementById('saveJournalNotes');
-            if (saveJournalNotesBtn) {
-                saveJournalNotesBtn.addEventListener('click', function() {
-                    const journalId = document.getElementById('journalId').value;
-                    const clientId = document.getElementById('clientId').value;
-                    const notes = document.getElementById('journalNotes').value;
-                    const flagUrgent = document.getElementById('flagUrgent').checked;
-                    const flagFollowUp = document.getElementById('flagFollowUp').checked;
-                    const flagRiskIndicator = document.getElementById('flagRiskIndicator').checked;
-                    const moodAssessment = document.querySelector('input[name="moodAssessment"]:checked').value;
-
-                    console.log({
-                        journalId,
-                        clientId,
-                        notes,
-                        flagUrgent,
-                        flagFollowUp,
-                        flagRiskIndicator,
-                        moodAssessment
-                    });
-
-                    alert('Notes saved successfully!');
-
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addNotesModal'));
-                    modal.hide();
-                });
-            }
-
-            const clientMoodCanvas = document.createElement('canvas');
-            clientMoodCanvas.width = document.getElementById('clientMoodChart').offsetWidth;
-            clientMoodCanvas.height = 200;
-            document.getElementById('clientMoodChart').appendChild(clientMoodCanvas);
-
-            const ctx = clientMoodCanvas.getContext('2d');
-
-            const dates = ['Apr 10', 'Apr 15', 'Apr 20', 'Apr 25', 'Apr 30', 'May 5'];
-            const moodData = [2, 3, 2, 3, 4, 4];
-
-            ctx.beginPath();
-            ctx.moveTo(40, 20);
-            ctx.lineTo(40, 150);
-            ctx.lineTo(clientMoodCanvas.width - 20, 150);
-            ctx.stroke();
-
-            const xStep = (clientMoodCanvas.width - 60) / dates.length;
-            const yStep = 26;
-
-            ctx.beginPath();
-            ctx.strokeStyle = '#3b71ca';
-            ctx.lineWidth = 2;
-
-            for (let i = 0; i < moodData.length; i++) {
-                const x = 40 + (i * xStep);
-                const y = 150 - (moodData[i] * yStep);
-
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-
-                ctx.fillStyle = '#3b71ca';
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#666';
-                ctx.font = '10px Arial';
-                ctx.fillText(dates[i], x - 15, 170);
-            }
-
-            ctx.stroke();
-
-            ctx.fillStyle = '#666';
-            ctx.font = '10px Arial';
-            for (let i = 1; i <= 5; i++) {
-                ctx.fillText(i.toString(), 25, 150 - (i * yStep) + 3);
-            }
         });
     </script>
 </section>
